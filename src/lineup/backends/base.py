@@ -21,6 +21,10 @@ class Generation:
     def total_logprob(self) -> float:
         return float(sum(self.token_logprobs))
 
+    @property
+    def mean_logprob(self) -> float:
+        return float(sum(self.token_logprobs) / len(self.token_logprobs)) if self.token_logprobs else 0.0
+
 
 @dataclass(frozen=True)
 class Scoring:
