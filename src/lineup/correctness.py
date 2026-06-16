@@ -1,19 +1,12 @@
 from __future__ import annotations
 
 import re
-import string
 
 from .backends.base import Message
+from .textnorm import normalize
 
-_ARTICLES = re.compile(r"\b(a|an|the)\b")
-_PUNCT = str.maketrans("", "", string.punctuation)
-
-
-def normalize(text: str) -> str:
-    """SQuAD-style normalization: lowercase, drop punctuation and articles, fold spaces."""
-    text = text.lower().translate(_PUNCT)
-    text = _ARTICLES.sub(" ", text)
-    return " ".join(text.split())
+_POSITIVE = {"yes", "correct", "true"}
+_WORD = re.compile(r"[a-z]+")
 
 
 def normalized_exact_match(prediction: str, gold: str) -> bool:
@@ -21,10 +14,17 @@ def normalized_exact_match(prediction: str, gold: str) -> bool:
 
 
 def matches_intended_wrong(prediction: str, intended_wrong: str) -> bool:
-    """Did the model echo the value the misleading chunk was built to induce? A diagnostic
-    signal that the misleading chunk likely drove the error, not a correctness label."""
-    wrong = normalize(intended_wrong)
-    return bool(wrong) and wrong in normalize(prediction)
+    """Did the model echo the value the misleading chunk was built to induce? Matched on
+    whole tokens so a short value (e.g. "5") is not found inside a longer one ("1885").
+    A diagnostic signal that the misleading chunk likely drove the error, not a label."""
+    wrong = normalize(intended_wrong).split()
+    prediction_tokens = normalize(prediction).split()
+    if not wrong:
+        return False
+    return any(
+        prediction_tokens[i : i + len(wrong)] == wrong
+        for i in range(len(prediction_tokens) - len(wrong) + 1)
+    )
 
 
 class LLMJudge:
@@ -49,4 +49,5 @@ class LLMJudge:
             ),
         ]
         reply = self.model.generate(messages, max_new_tokens=4).text
-        return reply.strip().lower().startswith("y")
+        words = _WORD.findall(reply.lower())
+        return bool(words) and words[0] in _POSITIVE

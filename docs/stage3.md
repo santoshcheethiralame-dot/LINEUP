@@ -17,13 +17,13 @@ Generation uses the Stage 0 backend in its greedy, temperature-0 setting, so a f
 Automatic correctness for short-answer QA has a well-known pitfall, noted in *The Power of Noise*: a strict string comparison marks "President Roosevelt" wrong when the reference is "Roosevelt". The stage therefore judges in two tiers:
 
 1. **Normalized exact match** — lowercase, strip punctuation and articles, fold whitespace (the SQuAD convention), then compare. This tier is high-precision and model-free.
-2. **LLM judge** — for answers that miss exact match, an LLM judge is asked whether the model answer is correct given the reference, and replies yes or no. This recovers genuine phrasing variants without loosening the exact tier into the false positives that naive substring matching would admit.
+2. **LLM judge** — for answers that miss exact match, an LLM judge is asked whether the model answer is correct given the reference, and replies yes or no. This recovers genuine phrasing variants without loosening the exact tier into the false positives that naive substring matching would admit. The verdict is read from the first word of the reply, so "Yes, correct." is parsed as readily as a bare "yes".
 
-Each verdict records which tier decided it. The judge is optional: with it disabled the stage falls back to exact match alone, which is the fast path used when developing on CPU.
+Each verdict records which tier decided it. The judge is optional: with it disabled the stage falls back to exact match alone, which is the fast path used when developing on CPU. By default the judge is the same model that produced the answer; because the exact tier settles the bulk of cases and the judge only adjudicates phrasing variants, the scope for self-preference bias is narrow, and since the judge accepts any backend a separate or stronger model can be substituted where the compute allows.
 
 ## The planted-value signal
 
-Beyond correct-or-wrong, the stage records whether the model's answer echoes the **intended wrong answer** — the value the Stage 2 misleading chunk was built to induce. This is not a correctness label; it is a diagnostic. When a wrong answer matches the planted value, it is strong evidence that the misleading chunk, and not some other distractor, drove the error — a hypothesis the Stage 4 oracle then confirms or refutes by counterfactual removal.
+Beyond correct-or-wrong, the stage records whether the model's answer echoes the **intended wrong answer** — the value the Stage 2 misleading chunk was built to induce. The match is on whole tokens, so a short planted value such as a year is not spuriously found inside a longer number. This is not a correctness label; it is a diagnostic. When a wrong answer matches the planted value, it is strong evidence that the misleading chunk, and not some other distractor, drove the error — a hypothesis the Stage 4 oracle then confirms or refutes by counterfactual removal.
 
 ## Output
 

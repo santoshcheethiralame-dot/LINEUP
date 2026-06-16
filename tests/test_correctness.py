@@ -22,11 +22,18 @@ def test_normalized_exact_match():
     assert not normalized_exact_match("Bartholdi", "Eiffel")
 
 
-def test_matches_intended_wrong_allows_containment():
+def test_matches_intended_wrong_allows_token_containment():
     assert matches_intended_wrong("It was Alexandre Bartholdi.", "Alexandre Bartholdi")
     assert not matches_intended_wrong("Gustave Eiffel", "Alexandre Bartholdi")
 
 
-def test_llm_judge_parses_yes_and_no():
-    assert LLMJudge(_Echo("yes")).is_correct("q", "gold", "pred") is True
-    assert LLMJudge(_Echo("No, incorrect")).is_correct("q", "gold", "pred") is False
+def test_matches_intended_wrong_is_token_aware():
+    assert matches_intended_wrong("The year was 1885.", "1885")
+    assert not matches_intended_wrong("The year was 1885.", "5")   # not a token inside "1885"
+
+
+def test_llm_judge_reads_the_first_word():
+    assert LLMJudge(_Echo("Yes, correct.")).is_correct("q", "g", "p") is True
+    assert LLMJudge(_Echo("Correct")).is_correct("q", "g", "p") is True
+    assert LLMJudge(_Echo("No")).is_correct("q", "g", "p") is False
+    assert LLMJudge(_Echo("Incorrect.")).is_correct("q", "g", "p") is False

@@ -1,6 +1,10 @@
+import os
+import tempfile
+
 from lineup.backends.base import Generation, LanguageModel, Scoring
 from lineup.correctness import LLMJudge
 from lineup.data.schema import Chunk, Recipe, Scenario
+from lineup.data.serialization import read_generations, write_generations
 from lineup.generation import generate_and_judge
 
 
@@ -47,3 +51,15 @@ def test_llm_judge_recovers_a_phrasing_variant():
         _Model("the engineer Gustave Eiffel"), _scenario(), llm_judge=LLMJudge(_Model("yes"))
     )
     assert result.is_correct and result.judged_by == "judge"
+
+
+def test_generations_round_trip_on_disk():
+    result = generate_and_judge(_Model("Alexandre Bartholdi"), _scenario())
+    with tempfile.TemporaryDirectory() as directory:
+        path = os.path.join(directory, "generations.jsonl")
+        write_generations(path, [result])
+        restored = read_generations(path)
+    assert len(restored) == 1
+    assert restored[0].qid == result.qid
+    assert restored[0].is_correct == result.is_correct
+    assert restored[0].matched_intended_wrong == result.matched_intended_wrong
