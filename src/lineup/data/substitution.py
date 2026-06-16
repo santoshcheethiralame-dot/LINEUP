@@ -4,6 +4,7 @@ import re
 from random import Random
 from typing import Iterable
 
+from ..textnorm import normalize
 from .schema import QAExample
 
 _YEAR = re.compile(r"^(1\d{3}|20\d{2})$")
@@ -37,15 +38,22 @@ def build_answer_pool(examples: Iterable[QAExample]) -> dict:
 
 
 def _shape(value: str) -> tuple:
-    tokens = value.split()
-    return (len(tokens), value[:1].isupper())
+    # Per-token capitalization pattern: keeps a proper name from being swapped for a
+    # same-length lowercase phrase, and vice versa.
+    return tuple(token[:1].isupper() for token in value.split())
 
 
-def _sample(answer: str, pool: dict, key: str, rng: Random) -> str | None:
+def _present(candidate: str, context: str) -> bool:
+    normalized = normalize(candidate)
+    return bool(normalized) and normalized in context
+
+
+def _sample(answer: str, pool: dict, key: str, rng: Random, context: str) -> str | None:
     lowered = answer.lower()
     candidates = [
         c for c in pool.get(key, [])
         if c.lower() != lowered and c.lower() not in lowered and lowered not in c.lower()
+        and normalize(c) and not _present(c, context)
     ]
     if not candidates:
         return None
@@ -53,17 +61,38 @@ def _sample(answer: str, pool: dict, key: str, rng: Random) -> str | None:
     return rng.choice(sorted(same_shape or candidates))
 
 
-def perturb_value(answer: str, answer_type: str, pool: dict, rng: Random) -> str | None:
+def perturb_value(
+    answer: str, answer_type: str, pool: dict, rng: Random, *, context: str = ""
+) -> str | None:
+    """Produce a believable wrong value of the same type, never one that already appears
+    in `context` (the question and source paragraph)."""
+    normalized_context = normalize(context)
     value = answer.strip()
+
     if answer_type == "year":
-        return str(int(value) + rng.choice(_YEAR_OFFSETS))
+        base = int(value)
+        offsets = list(_YEAR_OFFSETS)
+        rng.shuffle(offsets)
+        for offset in offsets:
+            candidate = str(base + offset)
+            if candidate != value and not _present(candidate, normalized_context):
+                return candidate
+        return None
+
     if answer_type == "number":
         try:
             base = float(value.replace(",", ""))
         except ValueError:
             base = None
         if base not in (None, 0.0):
-            scaled = base * rng.choice(_NUMBER_FACTORS)
-            return str(int(round(scaled))) if "." not in value else f"{scaled:.2f}"
-        return _sample(value, pool, "number", rng)
-    return _sample(value, pool, "entity", rng)
+            factors = list(_NUMBER_FACTORS)
+            rng.shuffle(factors)
+            for factor in factors:
+                scaled = base * factor
+                candidate = str(int(round(scaled))) if "." not in value else f"{scaled:.2f}"
+                if candidate.lower() != value.lower() and not _present(candidate, normalized_context):
+                    return candidate
+            return None
+        return _sample(value, pool, "number", rng, normalized_context)
+
+    return _sample(value, pool, "entity", rng, normalized_context)

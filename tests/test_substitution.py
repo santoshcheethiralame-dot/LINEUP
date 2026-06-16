@@ -37,6 +37,19 @@ def test_perturb_is_deterministic():
     )
 
 
+def test_perturb_year_avoids_a_value_already_in_context():
+    context = "It was built between 1887 and 1889."
+    outs = {perturb_value("1889", "year", {}, Random(seed), context=context) for seed in range(20)}
+    assert "1887" not in outs   # already a true value in the paragraph
+    assert "1889" not in outs   # the answer itself
+
+
+def test_perturb_entity_avoids_a_value_already_in_context():
+    pool = {"year": [], "number": [], "entity": ["Alexandre Gustave", "Henri Banks"]}
+    out = perturb_value("Gustave Eiffel", "entity", pool, Random(0), context="Henri Banks lived nearby")
+    assert out == "Alexandre Gustave"   # "Henri Banks" is in the context, so it is excluded
+
+
 def test_build_answer_pool_dedupes_and_types():
     examples = [
         QAExample("a", "q", "1889", [], []),

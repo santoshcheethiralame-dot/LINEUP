@@ -73,7 +73,8 @@ class ValueSubstitutionBuilder(MisleadingChunkBuilder):
         source_chunk, sentence_id = location
 
         answer_type = classify_answer(answer)
-        replacement = perturb_value(answer, answer_type, pool, rng)
+        context = example.question + " " + " ".join(source_chunk.sentences)
+        replacement = perturb_value(answer, answer_type, pool, rng, context=context)
         if not replacement or replacement.lower() == answer.lower():
             return None
 

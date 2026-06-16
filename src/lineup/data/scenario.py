@@ -24,30 +24,33 @@ class ScenarioBuilder:
         self.seed = seed
         self.misleading_builder = misleading_builder or ValueSubstitutionBuilder()
 
-    def _rng(self, qid: str) -> random.Random:
-        # A stable per-question seed: the built-in hash() is salted per process and
-        # would not reproduce across runs, so derive the seed from a fixed digest.
-        digest = hashlib.sha256(f"{self.seed}:{qid}".encode()).digest()
+    def _rng(self, qid: str, salt: str) -> random.Random:
+        # A stable per-question seed: the built-in hash() is salted per process and would
+        # not reproduce across runs, so derive it from a fixed digest. Substitution and
+        # ordering draw from independent streams, so changing one does not perturb the other.
+        digest = hashlib.sha256(f"{self.seed}:{salt}:{qid}".encode()).digest()
         return random.Random(int.from_bytes(digest[:8], "big"))
 
     def build(self, example: QAExample) -> Scenario | None:
         if substitution_check(example) is not None:
             return None
 
-        rng = self._rng(example.qid)
-        built = self.misleading_builder.build(example, self.answer_pool, rng)
+        built = self.misleading_builder.build(
+            example, self.answer_pool, self._rng(example.qid, "substitution")
+        )
         if built is None:
             return None
         misleading_chunk, recipe_bits = built
 
+        order_rng = self._rng(example.qid, "order")
         gold = list(example.gold_chunks)
         distractor_pool = list(example.distractor_pool)
-        rng.shuffle(distractor_pool)
+        order_rng.shuffle(distractor_pool)
         n_distractors = max(0, self.k - len(gold) - 1)
         distractors = distractor_pool[:n_distractors]
 
         chunks = gold + [misleading_chunk] + distractors
-        rng.shuffle(chunks)
+        order_rng.shuffle(chunks)
 
         recipe = Recipe(
             seed=self.seed,
