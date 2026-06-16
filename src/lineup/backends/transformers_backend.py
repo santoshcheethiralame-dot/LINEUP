@@ -23,15 +23,14 @@ def _resolve_dtype(name: str, device: str) -> torch.dtype:
     return dtype
 
 
-def _gather_response_logprobs(
-    logprobs: torch.Tensor, prompt_len: int, response_ids: torch.Tensor
-) -> list[float]:
-    # The distribution that predicts the token at absolute position p sits at
-    # position p - 1, so the i-th response token is scored from prompt_len + i - 1.
-    scored = []
-    for i, token_id in enumerate(response_ids.tolist()):
-        scored.append(float(logprobs[0, prompt_len + i - 1, token_id]))
-    return scored
+def _response_logprobs(logits: torch.Tensor, prompt_len: int, response_ids: list) -> list[float]:
+    # The distribution that predicts the token at absolute position p sits at position
+    # p - 1, so the response tokens are predicted by the window of positions
+    # [prompt_len - 1, prompt_len - 1 + len(response)). Softmax is taken over that
+    # window only, not the whole sequence, to keep memory bounded for long contexts.
+    window = logits[0, prompt_len - 1 : prompt_len - 1 + len(response_ids), :].float()
+    logprobs = torch.log_softmax(window, dim=-1)
+    return [float(logprobs[i, token_id]) for i, token_id in enumerate(response_ids)]
 
 
 class TransformersModel(LanguageModel):
@@ -119,9 +118,8 @@ class TransformersModel(LanguageModel):
         ).input_ids.to(self.device)
         input_ids = torch.cat([prompt_ids, response_ids], dim=1)
         logits = self.model(input_ids).logits
-        logprobs = torch.log_softmax(logits.float(), dim=-1)
-        scored = _gather_response_logprobs(logprobs, prompt_ids.shape[1], response_ids[0])
         ids = response_ids[0].tolist()
+        scored = _response_logprobs(logits, prompt_ids.shape[1], ids)
         return Scoring(
             tokens=self.tokenizer.convert_ids_to_tokens(ids),
             token_ids=ids,

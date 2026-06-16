@@ -1,11 +1,14 @@
-import torch
+import pytest
 
-from lineup.backends.transformers_backend import _gather_response_logprobs
+torch = pytest.importorskip("torch")
+
+from lineup.backends.transformers_backend import _response_logprobs
 
 
-def test_gather_uses_the_predicting_position():
-    logprobs = torch.full((1, 4, 3), -9.0)
-    logprobs[0, 1, 1] = -0.5      # predicts response token 0 (absolute position 2)
-    logprobs[0, 2, 2] = -0.2      # predicts response token 1 (absolute position 3)
-    scored = _gather_response_logprobs(logprobs, prompt_len=2, response_ids=torch.tensor([1, 2]))
-    assert scored == [-0.5, -0.2]
+def test_response_logprobs_reads_the_predicting_position():
+    logits = torch.full((1, 4, 5), -1e9)
+    logits[0, 1, 3] = 0.0   # predicts response token 0 (absolute position 2)
+    logits[0, 2, 4] = 0.0   # predicts response token 1 (absolute position 3)
+    out = _response_logprobs(logits, prompt_len=2, response_ids=[3, 4])
+    assert abs(out[0]) < 1e-3
+    assert abs(out[1]) < 1e-3
