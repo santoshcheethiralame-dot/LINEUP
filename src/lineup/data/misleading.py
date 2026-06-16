@@ -11,33 +11,35 @@ _BOOLEAN = {"yes", "no"}
 
 
 def _answer_pattern(answer: str) -> re.Pattern:
-    return re.compile(r"\b" + re.escape(answer) + r"\b", re.IGNORECASE)
+    # Anchor on a word boundary only where the answer edge is alphanumeric, so that
+    # answers containing punctuation ("U.S.") still match, while a short answer is not
+    # matched inside a longer word ("Mann" within "Manning").
+    left = r"\b" if answer[:1].isalnum() else ""
+    right = r"\b" if answer[-1:].isalnum() else ""
+    return re.compile(left + re.escape(answer) + right, re.IGNORECASE)
 
 
 def find_answer_location(example: QAExample):
     """Locate the gold sentence that states the answer, preferring annotated
     supporting sentences. Returns (chunk, sentence_id) or None."""
-    answer = example.answer.strip()
-    pattern = _answer_pattern(answer)
-    lowered = answer.lower()
-
-    def matches(sentence: str) -> bool:
-        return bool(pattern.search(sentence)) or lowered in sentence.lower()
-
+    pattern = _answer_pattern(example.answer.strip())
     for chunk in example.gold_chunks:
         for sentence_id in chunk.supporting_sentence_ids:
-            if 0 <= sentence_id < len(chunk.sentences) and matches(chunk.sentences[sentence_id]):
+            if 0 <= sentence_id < len(chunk.sentences) and pattern.search(chunk.sentences[sentence_id]):
                 return chunk, sentence_id
     for chunk in example.gold_chunks:
         for sentence_id, sentence in enumerate(chunk.sentences):
-            if matches(sentence):
+            if pattern.search(sentence):
                 return chunk, sentence_id
     return None
 
 
 def substitution_check(example: QAExample) -> str | None:
     """Return a reason the example cannot carry a constructed near-miss, or None."""
-    if example.answer.strip().lower() in _BOOLEAN:
+    answer = example.answer.strip()
+    if not answer:
+        return "empty answer"
+    if answer.lower() in _BOOLEAN:
         return "boolean answer"
     if find_answer_location(example) is None:
         return "answer not present in gold sentences"
@@ -46,11 +48,7 @@ def substitution_check(example: QAExample) -> str | None:
 
 def _substitute(answer: str, replacement: str, sentences: list[str]) -> list[str]:
     pattern = _answer_pattern(answer)
-    rewritten = [pattern.sub(replacement, sentence) for sentence in sentences]
-    if rewritten == sentences:
-        loose = re.compile(re.escape(answer), re.IGNORECASE)
-        rewritten = [loose.sub(replacement, sentence) for sentence in sentences]
-    return rewritten
+    return [pattern.sub(replacement, sentence) for sentence in sentences]
 
 
 class MisleadingChunkBuilder(ABC):
@@ -66,12 +64,14 @@ class ValueSubstitutionBuilder(MisleadingChunkBuilder):
     """
 
     def build(self, example: QAExample, pool: dict, rng: Random):
+        answer = example.answer.strip()
+        if not answer:
+            return None
         location = find_answer_location(example)
         if location is None:
             return None
         source_chunk, sentence_id = location
 
-        answer = example.answer.strip()
         answer_type = classify_answer(answer)
         replacement = perturb_value(answer, answer_type, pool, rng)
         if not replacement or replacement.lower() == answer.lower():

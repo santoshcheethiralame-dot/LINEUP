@@ -21,7 +21,7 @@ In short, a near-miss is a passage that is topically indistinguishable from the 
 
 The reference construction clones the gold paragraph that states the answer and replaces the answer with a plausible, same-type wrong value. It proceeds in three steps.
 
-**Locating the answer.** The builder searches the gold chunks for the sentence that states the answer, preferring the annotated supporting sentences and falling back to any gold sentence. Matching is word-boundary aware with a case-insensitive fallback. If no gold sentence contains the answer, the example is not eligible for substitution.
+**Locating the answer.** The builder searches the gold chunks for the sentence that states the answer, preferring the annotated supporting sentences and falling back to any gold sentence. Matching is case-insensitive and anchored at word boundaries only where the answer begins or ends with an alphanumeric character, so an answer containing punctuation (such as "U.S.") is still found while a short answer is not matched inside a longer word. If no gold sentence contains the answer, the example is not eligible for substitution.
 
 **Choosing the wrong value.** The answer is typed as a year, a number, or an entity. Years are shifted by a small plausible offset; numbers are scaled by a plausible factor; entities are sampled from the pool of real same-type answers observed elsewhere in the corpus, preferring candidates of the same surface shape (token count and capitalisation) and excluding the answer itself and its sub- or super-strings. Drawing the replacement from genuine same-type answers keeps it believable rather than invented, and keeps the construction free of any external model.
 
