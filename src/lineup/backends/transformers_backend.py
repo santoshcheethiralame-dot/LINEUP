@@ -14,6 +14,15 @@ _DTYPES = {
 }
 
 
+def _resolve_dtype(name: str, device: str) -> torch.dtype:
+    if not device.startswith("cuda"):
+        return torch.float32
+    dtype = _DTYPES[name]
+    if dtype is torch.bfloat16 and not torch.cuda.is_bf16_supported():
+        return torch.float16        # e.g. a T4, which lacks native bfloat16
+    return dtype
+
+
 def _gather_response_logprobs(
     logprobs: torch.Tensor, prompt_len: int, response_ids: torch.Tensor
 ) -> list[float]:
@@ -33,13 +42,30 @@ class TransformersModel(LanguageModel):
         device: str | None = None,
         dtype: str = "bfloat16",
         max_new_tokens: int = 256,
+        load_in_4bit: bool = False,
     ):
         self.model_name = model_name
         self.device = device or ("cuda" if torch.cuda.is_available() else "cpu")
-        torch_dtype = _DTYPES[dtype] if self.device.startswith("cuda") else torch.float32
+        if load_in_4bit and not self.device.startswith("cuda"):
+            raise ValueError("4-bit quantization requires a CUDA device")
         self.tokenizer = AutoTokenizer.from_pretrained(model_name)
-        self.model = AutoModelForCausalLM.from_pretrained(model_name, torch_dtype=torch_dtype)
-        self.model.to(self.device)
+        if load_in_4bit:
+            from transformers import BitsAndBytesConfig
+
+            quantization = BitsAndBytesConfig(
+                load_in_4bit=True,
+                bnb_4bit_quant_type="nf4",
+                bnb_4bit_use_double_quant=True,
+                bnb_4bit_compute_dtype=torch.float16,
+            )
+            self.model = AutoModelForCausalLM.from_pretrained(
+                model_name, quantization_config=quantization, device_map="auto"
+            )
+        else:
+            self.model = AutoModelForCausalLM.from_pretrained(
+                model_name, torch_dtype=_resolve_dtype(dtype, self.device)
+            )
+            self.model.to(self.device)
         self.model.eval()
         self.max_new_tokens = max_new_tokens
 
@@ -50,6 +76,7 @@ class TransformersModel(LanguageModel):
             device=config.device,
             dtype=config.dtype,
             max_new_tokens=config.max_new_tokens,
+            load_in_4bit=getattr(config, "load_in_4bit", False),
         )
 
     def _encode_prompt(self, messages: Sequence[Message]) -> torch.Tensor:

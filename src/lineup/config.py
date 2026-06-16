@@ -20,8 +20,9 @@ class GenerationConfig:
     model_name: str = DEFAULT_MODEL
     max_new_tokens: int = 256
     seed: int = DEFAULT_SEED
-    dtype: str = "bfloat16"     # applied on CUDA; CPU runs fall back to float32
-    device: str | None = None   # None selects cuda when available, else cpu
+    dtype: str = "bfloat16"      # applied on CUDA; CPU runs fall back to float32
+    device: str | None = None    # None selects cuda when available, else cpu
+    load_in_4bit: bool = False   # 4-bit (nf4) so the 7B model fits a 16 GB GPU
 
 
 def set_seed(seed: int = DEFAULT_SEED) -> None:

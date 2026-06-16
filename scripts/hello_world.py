@@ -14,10 +14,11 @@ def main() -> None:
     parser = argparse.ArgumentParser()
     parser.add_argument("--model", default=DEFAULT_MODEL)
     parser.add_argument("--max-new-tokens", type=int, default=64)
+    parser.add_argument("--load-in-4bit", action="store_true", help="4-bit load for a 16 GB GPU")
     args = parser.parse_args()
 
     set_seed()
-    model = TransformersModel(args.model, max_new_tokens=args.max_new_tokens)
+    model = TransformersModel(args.model, max_new_tokens=args.max_new_tokens, load_in_4bit=args.load_in_4bit)
 
     messages = [
         Message("system", "Answer the question using only the provided context. Be concise."),
