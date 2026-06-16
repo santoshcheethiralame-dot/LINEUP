@@ -1,0 +1,42 @@
+from random import Random
+
+from lineup.data.schema import QAExample
+from lineup.data.substitution import build_answer_pool, classify_answer, perturb_value
+
+
+def test_classify_answer():
+    assert classify_answer("1889") == "year"
+    assert classify_answer("42") == "number"
+    assert classify_answer("3,000") == "number"
+    assert classify_answer("Gustave Eiffel") == "entity"
+
+
+def test_perturb_year_is_a_different_plausible_year():
+    out = perturb_value("1889", "year", {}, Random(0))
+    assert out != "1889"
+    assert out.isdigit() and len(out) == 4
+
+
+def test_perturb_entity_samples_a_different_pool_member():
+    pool = {"year": [], "number": [], "entity": ["Alexandre Gustave", "Henri Banks"]}
+    out = perturb_value("Gustave Eiffel", "entity", pool, Random(1))
+    assert out in pool["entity"]
+    assert out != "Gustave Eiffel"
+
+
+def test_perturb_is_deterministic():
+    pool = {"year": [], "number": [], "entity": ["Alexandre Gustave", "Henri Banks"]}
+    assert perturb_value("Gustave Eiffel", "entity", pool, Random(7)) == perturb_value(
+        "Gustave Eiffel", "entity", pool, Random(7)
+    )
+
+
+def test_build_answer_pool_dedupes_and_types():
+    examples = [
+        QAExample("a", "q", "1889", [], []),
+        QAExample("b", "q", "Gustave Eiffel", [], []),
+        QAExample("c", "q", "gustave eiffel", [], []),  # case-insensitive duplicate
+    ]
+    pool = build_answer_pool(examples)
+    assert pool["year"] == ["1889"]
+    assert pool["entity"] == ["Gustave Eiffel"]
