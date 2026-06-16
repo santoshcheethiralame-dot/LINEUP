@@ -3,7 +3,7 @@ from __future__ import annotations
 import re
 
 from .backends.base import Message
-from .textnorm import normalize
+from .textnorm import contains_phrase, normalize
 
 _POSITIVE = {"yes", "correct", "true"}
 _WORD = re.compile(r"[a-z]+")
@@ -14,17 +14,19 @@ def normalized_exact_match(prediction: str, gold: str) -> bool:
 
 
 def matches_intended_wrong(prediction: str, intended_wrong: str) -> bool:
-    """Did the model echo the value the misleading chunk was built to induce? Matched on
-    whole tokens so a short value (e.g. "5") is not found inside a longer one ("1885").
-    A diagnostic signal that the misleading chunk likely drove the error, not a label."""
-    wrong = normalize(intended_wrong).split()
-    prediction_tokens = normalize(prediction).split()
-    if not wrong:
-        return False
-    return any(
-        prediction_tokens[i : i + len(wrong)] == wrong
-        for i in range(len(prediction_tokens) - len(wrong) + 1)
-    )
+    """Did the model echo the value the misleading chunk was built to induce? A diagnostic
+    signal that the misleading chunk likely drove the error, not a correctness label."""
+    return contains_phrase(prediction, intended_wrong)
+
+
+def judge_correct(question: str, gold: str, prediction: str, llm_judge=None):
+    """Decide correctness: normalized exact match first, then defer the phrasing variants
+    it misses to the LLM judge when one is supplied. Returns (is_correct, tier)."""
+    if normalized_exact_match(prediction, gold):
+        return True, "exact"
+    if llm_judge is not None:
+        return llm_judge.is_correct(question, gold, prediction), "judge"
+    return False, "exact"
 
 
 class LLMJudge:

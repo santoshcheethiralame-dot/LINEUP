@@ -15,6 +15,10 @@ def render_context(chunks: Sequence[Chunk]) -> str:
     return "\n\n".join(f"[{i}] {chunk.title}\n{chunk.text}" for i, chunk in enumerate(chunks, 1))
 
 
-def build_messages(scenario: Scenario) -> list[Message]:
-    user = f"Context:\n{render_context(scenario.chunks)}\n\nQuestion: {scenario.question}"
+def build_messages_for(question: str, chunks: Sequence[Chunk]) -> list[Message]:
+    user = f"Context:\n{render_context(chunks)}\n\nQuestion: {question}"
     return [Message("system", SYSTEM_PROMPT), Message("user", user)]
+
+
+def build_messages(scenario: Scenario) -> list[Message]:
+    return build_messages_for(scenario.question, scenario.chunks)
