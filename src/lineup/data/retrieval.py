@@ -8,7 +8,7 @@ from rank_bm25 import BM25Okapi
 
 from .schema import Chunk, QAExample
 
-_WORD = re.compile(r"[a-z0-9]+")
+_WORD = re.compile(r"\w+")
 
 
 def tokenize(text: str) -> list[str]:

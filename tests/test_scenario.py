@@ -1,6 +1,9 @@
+import os
+import tempfile
+
 from lineup.data.scenario import ScenarioBuilder
 from lineup.data.schema import Chunk, QAExample
-from lineup.data.serialization import scenario_from_dict, scenario_to_dict
+from lineup.data.serialization import read_scenarios, scenario_from_dict, scenario_to_dict, write_scenarios
 
 POOL = {"year": [], "number": [], "entity": ["Alexandre Bartholdi", "Henri Banks"]}
 
@@ -54,3 +57,14 @@ def test_serialization_round_trip():
     assert restored.recipe.order == scenario.recipe.order
     assert [c.chunk_id for c in restored.chunks] == [c.chunk_id for c in scenario.chunks]
     assert restored.chunks[0].supporting_sentence_ids == scenario.chunks[0].supporting_sentence_ids
+
+
+def test_jsonl_round_trip_on_disk():
+    scenario = ScenarioBuilder(answer_pool=POOL, k=5, seed=0).build(_example())
+    with tempfile.TemporaryDirectory() as directory:
+        path = os.path.join(directory, "scenarios.jsonl")
+        write_scenarios(path, [scenario])
+        restored = read_scenarios(path)
+    assert len(restored) == 1
+    assert restored[0].recipe.order == scenario.recipe.order
+    assert restored[0].chunks[0].supporting_sentence_ids == scenario.chunks[0].supporting_sentence_ids

@@ -17,6 +17,12 @@ def test_perturb_year_is_a_different_plausible_year():
     assert out.isdigit() and len(out) == 4
 
 
+def test_perturb_number_scales_to_a_different_value():
+    out = perturb_value("100", "number", {}, Random(0))
+    assert out != "100"
+    assert out.isdigit()
+
+
 def test_perturb_entity_samples_a_different_pool_member():
     pool = {"year": [], "number": [], "entity": ["Alexandre Gustave", "Henri Banks"]}
     out = perturb_value("Gustave Eiffel", "entity", pool, Random(1))
