@@ -5,7 +5,7 @@ import json
 from pathlib import Path
 from typing import Iterable
 
-from .schema import Chunk, Recipe, Scenario
+from .schema import Chunk, GenerationResult, Recipe, Scenario
 
 
 def scenario_to_dict(scenario: Scenario) -> dict:
@@ -43,3 +43,20 @@ def read_scenarios(path) -> list[Scenario]:
             if line:
                 scenarios.append(scenario_from_dict(json.loads(line)))
     return scenarios
+
+
+def write_generations(path, results: Iterable[GenerationResult]) -> None:
+    path = Path(path)
+    with path.open("w", encoding="utf-8") as handle:
+        for result in results:
+            handle.write(json.dumps(dataclasses.asdict(result), ensure_ascii=False) + "\n")
+
+
+def read_generations(path) -> list[GenerationResult]:
+    results = []
+    with Path(path).open(encoding="utf-8") as handle:
+        for line in handle:
+            line = line.strip()
+            if line:
+                results.append(GenerationResult(**json.loads(line)))
+    return results

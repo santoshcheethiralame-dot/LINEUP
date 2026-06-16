@@ -50,3 +50,17 @@ class Scenario:
     chunks: list[Chunk]               # ordered as presented to the model
     recipe: Recipe
     meta: dict = field(default_factory=dict)
+
+
+@dataclass
+class GenerationResult:
+    """The model's answer to one scenario and how it was judged."""
+
+    qid: str
+    question: str
+    gold_answer: str
+    model_answer: str
+    is_correct: bool
+    judged_by: str                    # "exact" or "judge"
+    matched_intended_wrong: bool      # did the answer echo the planted misleading value?
+    answer_logprob: float             # mean per-token logprob of the answer (a confidence proxy)
