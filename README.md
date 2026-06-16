@@ -15,10 +15,11 @@ The hard case is the *misleading* chunk: salient but not causal. A method that b
 
 ## Status
 
-This repository currently covers the first two stages of the build:
+This repository currently covers the first three stages of the build:
 
 - **Stage 0 — infrastructure and model access.** A model backend that returns both generated text and teacher-forced token log-probabilities ([docs/stage0.md](docs/stage0.md)).
 - **Stage 1 — data foundation.** A loader over multi-hop QA that yields, per question, the gold answer, the gold supporting chunks, and a pool of realistic distractors ([docs/stage1.md](docs/stage1.md)).
+- **Stage 2 — scenario construction.** For each question, the retrieved context is assembled from the gold chunks, distractors, and one constructed organic near-miss chunk, in randomized order and with a reproducible recipe ([docs/stage2.md](docs/stage2.md)).
 
 ## Layout
 
@@ -26,7 +27,7 @@ This repository currently covers the first two stages of the build:
 src/lineup/
   config.py        run configuration and seeding
   backends/        language-model backends (generation + scoring)
-  data/            dataset schema, HotpotQA loader, distractor retriever
+  data/            schema, HotpotQA loader, distractor retriever, near-miss construction, scenario assembly
 scripts/           runnable entry points for each stage
 tests/             unit tests
 docs/              per-stage write-ups
@@ -60,6 +61,12 @@ Load one multi-hop question with its gold chunks and retrieved distractors:
 python scripts/inspect_example.py
 ```
 
+Build a batch of test cases (each is gold chunks + distractors + one near-miss):
+
+```
+python scripts/build_scenarios.py
+```
+
 ## Tests
 
 ```
@@ -69,4 +76,4 @@ pytest -m slow     # also runs backend tests, which fetch a tiny model
 
 ## Notes
 
-Generation is greedy (temperature 0) and seeded, so a fixed model and precision give reproducible log-probabilities. The default backend uses Hugging Face `transformers`; the backend interface is small enough that a vLLM or hosted-API backend can be substituted without touching the rest of the pipeline.
+Generation is greedy (temperature 0) and seeded, so a fixed model and precision give reproducible log-probabilities. Scenario construction is likewise seeded and model-free, so a fixed corpus and seed give an identical benchmark. The default backend uses Hugging Face `transformers`; the backend interface is small enough that a vLLM or hosted-API backend can be substituted without touching the rest of the pipeline.
