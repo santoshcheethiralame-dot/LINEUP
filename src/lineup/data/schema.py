@@ -64,3 +64,29 @@ class GenerationResult:
     judged_by: str                    # "exact" or "judge"
     matched_intended_wrong: bool      # did the answer echo the planted misleading value?
     answer_logprob: float             # mean per-token logprob of the answer (a confidence proxy)
+
+
+@dataclass
+class ChunkRole:
+    """One chunk's leave-one-out role and the signals behind it."""
+
+    chunk_id: str
+    provenance: str                   # gold / distractor / misleading (where it came from)
+    role: str                         # culprit / misleading / silent / inert (the 2x2 quadrant)
+    causal: bool                      # did removing it change the model's answer?
+    salient: bool                     # does the chunk contain the model's answer?
+    now_correct: bool                 # was the answer correct once this chunk was removed?
+    delta_logprob: float              # drop in the answer's logprob when this chunk is removed
+    answer_without: str               # the answer the model gave with this chunk removed
+
+
+@dataclass
+class CaseRoles:
+    """The ground-truth role labels for one test case — the benchmark's unit of output."""
+
+    qid: str
+    question: str
+    gold_answer: str
+    original_answer: str
+    original_correct: bool
+    chunk_roles: list[ChunkRole]
