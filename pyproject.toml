@@ -1,0 +1,33 @@
+[build-system]
+requires = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "lineup"
+version = "0.0.1"
+description = "A controlled benchmark for organic chunk-role attribution in retrieval-augmented generation."
+readme = "README.md"
+requires-python = ">=3.10"
+dependencies = [
+    "transformers>=4.45,<4.47",
+    "datasets>=3.0,<3.2",
+    "accelerate>=1.0,<1.2",
+    "rank-bm25>=0.2.2,<0.3",
+    "scikit-learn>=1.4,<1.6",
+    "pandas>=2.1,<2.3",
+    "numpy>=1.26,<2.0",
+    "matplotlib>=3.8,<3.10",
+    "sentencepiece>=0.2,<0.3",
+    "protobuf>=4,<6",
+]
+
+[project.optional-dependencies]
+dev = ["pytest>=8,<9"]
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "-m 'not slow'"
+markers = ["slow: tests that download a small model from the Hugging Face Hub"]
