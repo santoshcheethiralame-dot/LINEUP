@@ -1,5 +1,7 @@
 # lineup
 
+[![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/santoshcheethiralame-dot/LINEUP/blob/main/notebooks/lineup_colab.ipynb)
+
 A controlled benchmark for **organic chunk-role attribution** in retrieval-augmented generation.
 
 When a RAG system answers confidently but wrongly, the failure usually traces back to a single retrieved passage. Existing tools tell you *that* an answer is unfaithful; they do not reliably tell you *which* chunk caused it, and they are easiest to fool when the offending passage is not adversarial but simply stale, near-duplicate, or topically adjacent. This project builds a benchmark whose chunk roles are known by construction, so attribution and traceback methods can be measured on whether they recover the true causal chunk.
@@ -29,6 +31,7 @@ src/lineup/
   backends/        language-model backends (generation + scoring)
   data/            schema, HotpotQA loader, distractor retriever, near-miss construction, scenario assembly
 scripts/           runnable entry points for each stage
+notebooks/         cloud-GPU notebook for the model stages
 tests/             unit tests
 docs/              per-stage write-ups
 ```
@@ -46,6 +49,10 @@ pip install -e .
 ```
 
 PyTorch is installed first, from its CUDA index, because the version in `requirements.txt` deliberately omits it.
+
+## Running the model stages
+
+Only Stages 3–5 need a GPU; the data and scenario stages, the tests, and the scorer run on CPU. Without a local GPU, run the model stages on a free Colab or Kaggle T4 (16 GB) using the notebook in `notebooks/`, which loads the 7B model in 4-bit. See [docs/running.md](docs/running.md) for the full compute split and how a second machine reproduces the run.
 
 ## Quickstart
 
