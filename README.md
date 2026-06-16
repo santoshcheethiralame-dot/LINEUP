@@ -17,11 +17,12 @@ The hard case is the *misleading* chunk: salient but not causal. A method that b
 
 ## Status
 
-This repository currently covers the first three stages of the build:
+This repository currently covers the first four stages of the build:
 
 - **Stage 0 — infrastructure and model access.** A model backend that returns both generated text and teacher-forced token log-probabilities ([docs/stage0.md](docs/stage0.md)).
 - **Stage 1 — data foundation.** A loader over multi-hop QA that yields, per question, the gold answer, the gold supporting chunks, and a pool of realistic distractors ([docs/stage1.md](docs/stage1.md)).
 - **Stage 2 — scenario construction.** For each question, the retrieved context is assembled from the gold chunks, distractors, and one constructed organic near-miss chunk, in randomized order and with a reproducible recipe ([docs/stage2.md](docs/stage2.md)).
+- **Stage 3 — generation and correctness.** Run the model on each case, label the answer correct or wrong (exact match plus an LLM judge), and flag when the answer echoes the planted misleading value ([docs/stage3.md](docs/stage3.md)).
 
 ## Layout
 
@@ -30,6 +31,9 @@ src/lineup/
   config.py        run configuration and seeding
   backends/        language-model backends (generation + scoring)
   data/            schema, HotpotQA loader, distractor retriever, near-miss construction, scenario assembly
+  prompt.py        render a scenario into a prompt
+  correctness.py   answer normalization and the LLM judge
+  generation.py    run the model and label correctness
 scripts/           runnable entry points for each stage
 notebooks/         cloud-GPU notebook for the model stages
 tests/             unit tests
@@ -72,6 +76,12 @@ Build a batch of test cases (each is gold chunks + distractors + one near-miss):
 
 ```
 python scripts/build_scenarios.py
+```
+
+Run the model on the cases and label them correct or wrong (needs a GPU — use the Colab notebook):
+
+```
+python scripts/run_generation.py
 ```
 
 ## Tests
