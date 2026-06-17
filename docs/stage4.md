@@ -37,7 +37,11 @@ For each case the stage emits a `CaseRoles` record: the question, the gold and o
 
 ## CPU-testability
 
-The oracle is expressed entirely against the abstract `LanguageModel` interface, so the role logic is exercised on CPU against fake models with no GPU. A model that answers wrongly only while the near-miss is present yields that chunk as a *culprit*; a model that answers wrongly regardless yields it as *misleading*. Those two fixtures pin the central distinction the benchmark exists to measure.
+The oracle is expressed entirely against the abstract `LanguageModel` interface, so the role logic is exercised on CPU against fake models with no GPU. A model that answers wrongly only while the near-miss is present yields that chunk as a *culprit*; a model that answers wrongly regardless yields it as *misleading*; a model keyed to a non-answer bridge fact yields that chunk as *silent*. Those fixtures pin the distinctions the benchmark exists to measure.
+
+## Limitations and scope
+
+Leave-one-out attributes single chunks, so it under-credits **redundant** causes: if two chunks would each independently produce the answer, removing either alone changes nothing and both read as non-causal. The binary-value construction keeps this rare — the gold and the near-miss carry *different* values, so they do not back each other up — and a chunk that merely agrees with the model's parametric knowledge reading as non-causal is correct behaviour, a fact about the model rather than a flaw to paper over. Removal also shifts the positions of the surviving chunks, the same confound any ablation carries and the reason order is randomised upstream. The salience axis is one transparent, threshold-free reference — *does the chunk hold the answer's value* — chosen over a tuned similarity score precisely so the labels cannot be argued with; a method that defines salience differently is measured against this reference, not against itself. Finally, the role names are the four quadrants of the 2×2 and are most meaningful on the wrong cases the benchmark targets; on a correct case the gold chunk is simply the causal, salient one, and the error-flavoured names should be read as quadrant labels.
 
 ## Relation to the cited work
 

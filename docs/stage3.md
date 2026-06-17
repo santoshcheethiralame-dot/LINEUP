@@ -37,6 +37,10 @@ Generation is the first stage that needs the GPU, and it must run on a single ma
 
 The prompt builder, the normalization and matching functions, the LLM-judge parsing, and the end-to-end generate-and-judge flow are all covered by fast tests over a fake backend that returns canned answers: a correct answer is labeled by exact match, a planted wrong value is flagged, and a phrasing variant is recovered by the judge.
 
+## Limitations
+
+Correctness on the variants exact match misses rests on a model judge, and by default that judge is the answering model itself. The bias is bounded — exact match settles the bulk of cases and the judge only adjudicates phrasing — but a separate judge is the cleaner choice where the compute allows, and the interface accepts one. An abstention ("I don't know") is counted simply as wrong rather than as its own category; the recorded answer log-probability is what later lets a confident error be told apart from a hesitant one.
+
 ## Relation to the cited work
 
 - **Lewis et al., 2020** (arXiv:2005.11401) is the retrieval-augmented generation setup being run here.
