@@ -22,9 +22,11 @@ CASES = [_case("q1", {"g": "culprit", "m": "misleading", "d": "inert"})]
 def test_method_that_picks_the_culprit_scores_perfectly():
     predictions = [_prediction("q1", "causal", {"g": 1.0, "m": 0.5, "d": 0.0})]
     report = score_predictions(CASES, predictions)[0]
+    assert report.n_with_culprit == 1
     assert report.top1_culprit_accuracy == 1.0
     assert report.misleading_as_culprit_rate == 0.0
     assert report.culprit_over_misleading_winrate == 1.0
+    assert report.culprit_over_rest_winrate == 1.0
 
 
 def test_salience_method_blames_the_misleading_chunk():
@@ -32,7 +34,8 @@ def test_salience_method_blames_the_misleading_chunk():
     report = score_predictions(CASES, predictions)[0]
     assert report.top1_culprit_accuracy == 0.0
     assert report.misleading_as_culprit_rate == 1.0
-    assert report.culprit_over_misleading_winrate == 0.0
+    assert report.culprit_over_misleading_winrate == 0.0   # culprit below the near-miss (the hard pair)
+    assert report.culprit_over_rest_winrate == 0.5         # but still above the plain distractor
 
 
 def test_winrate_is_none_without_a_culprit_misleading_pair():
@@ -40,11 +43,22 @@ def test_winrate_is_none_without_a_culprit_misleading_pair():
     predictions = [_prediction("q1", "x", {"g": 1.0, "d": 0.0})]
     report = score_predictions(cases, predictions)[0]
     assert report.culprit_over_misleading_winrate is None
-    assert report.n_pairs == 0
+    assert report.n_misleading_pairs == 0
+    assert report.culprit_over_rest_winrate == 1.0
+    assert report.top1_culprit_accuracy == 1.0
+
+
+def test_top1_accuracy_counts_only_cases_that_have_a_culprit():
+    cases = [_case("q1", {"m": "misleading", "d": "inert"})]   # the error has no findable culprit
+    predictions = [_prediction("q1", "x", {"m": 1.0, "d": 0.0})]
+    report = score_predictions(cases, predictions)[0]
+    assert report.n_with_culprit == 0
+    assert report.top1_culprit_accuracy is None               # nothing to find
+    assert report.misleading_as_culprit_rate == 1.0           # but the decoy was still blamed
 
 
 def test_predictions_for_unknown_cases_are_ignored():
     predictions = [_prediction("absent", "x", {"a": 1.0})]
     report = score_predictions(CASES, predictions)[0]
     assert report.n_cases == 0
-    assert report.top1_culprit_accuracy == 0.0
+    assert report.top1_culprit_accuracy is None

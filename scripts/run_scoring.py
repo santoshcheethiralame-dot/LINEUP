@@ -8,20 +8,20 @@ from lineup.scoring import score_predictions
 _ROLES = ("culprit", "misleading", "silent", "inert")
 
 
+def _cell(value) -> str:
+    return f"{value:.2f}" if value is not None else "n/a"
+
+
 def _markdown_table(reports) -> str:
     lines = [
-        "| method | n | top-1 culprit acc | misleading-as-culprit | culprit > misleading |",
-        "| --- | ---: | ---: | ---: | ---: |",
+        "| method | n | n(culprit) | top-1 | misleading-as-culprit | culprit > misleading | culprit > rest |",
+        "| --- | ---: | ---: | ---: | ---: | ---: | ---: |",
     ]
     for report in reports:
-        winrate = (
-            f"{report.culprit_over_misleading_winrate:.2f}"
-            if report.culprit_over_misleading_winrate is not None
-            else "n/a"
-        )
         lines.append(
-            f"| {report.method} | {report.n_cases} | {report.top1_culprit_accuracy:.2f} | "
-            f"{report.misleading_as_culprit_rate:.2f} | {winrate} |"
+            f"| {report.method} | {report.n_cases} | {report.n_with_culprit} | "
+            f"{_cell(report.top1_culprit_accuracy)} | {report.misleading_as_culprit_rate:.2f} | "
+            f"{_cell(report.culprit_over_misleading_winrate)} | {_cell(report.culprit_over_rest_winrate)} |"
         )
     return "\n".join(lines)
 

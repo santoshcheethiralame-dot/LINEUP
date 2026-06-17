@@ -8,12 +8,13 @@ Stage 6 produces the paper's core evidence. It joins each method's predictions (
 
 The metrics are chosen to be **scale-safe** — different methods produce scores on wholly different scales (ContextCite's Lasso weights, a token-overlap fraction, a one-hot judge vote), so the scorer never compares a raw score across cases or across methods.
 
-- **Top-1 culprit accuracy.** The fraction of cases in which a method's argmax pick is a true culprit. Using the argmax sidesteps any threshold.
+- **Top-1 culprit accuracy.** Among the cases that actually contain a culprit, the fraction in which a method's argmax pick is one. Restricting to those cases is deliberate: a wrong answer whose error localises to no single salient causal chunk has no culprit to find, and counting it against every method would deflate the metric for a miss that was unavoidable. Using the argmax sidesteps any threshold.
 - **Predicted-role distribution.** For each method, the true role of the chunk it picked, tallied across cases — culprit, misleading, silent, or inert. This is the 2×2 confusion of the prediction, and it is the empirical form of the figure the project is organised around.
 - **Misleading-as-culprit rate.** The *misleading* entry of that distribution: how often a method's top pick is a chunk that looks responsible but is not the cause. This is the headline number — the failure the benchmark was built to measure.
 - **Culprit-over-misleading win-rate.** The crux distinction, scored as a within-case pairwise comparison: over every (culprit, misleading) pair *inside the same case*, the fraction in which the method scored the culprit above the decoy (ties counting a half). Because the comparison is always within one case, it never depends on the score's scale, and it is exactly the AUROC for telling the true cause from the look-alike. A genuinely causal method approaches one; a method that conflates salience with causation sits near a half or below.
+- **Culprit-over-rest win-rate.** The same within-case comparison, but the culprit against *every* non-culprit chunk. Reading it beside the previous number is what locates the failure: a method that scores high here yet low on culprit-over-misleading ranks culprits above plain distractors while being specifically fooled by the near-miss.
 
-Top-1 accuracy and the predicted-role distribution use the single argmax prediction; the win-rate uses the full per-chunk scores. Per-role precision, recall, and F1 follow directly from the role distribution and are left to downstream analysis rather than fixed here, so no thresholding choice is baked into the headline.
+Top-1 accuracy and the predicted-role distribution use the single argmax prediction; the win-rates use the full per-chunk scores. Per-role precision, recall, and F1 follow directly from the role distribution and are left to downstream analysis rather than fixed here, so no thresholding choice is baked into the headline.
 
 ## Scope
 
