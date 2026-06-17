@@ -40,6 +40,7 @@ Retrieval-augmented generation fails most dangerously when it is confidently wro
 
 - **ContextCite** — random ablations, logit-transformed response probability, Lasso surrogate; the contributive baseline.
 - **Lexical similarity** — pure salience; the baseline that should blame the near-miss.
+- **Single-chunk support** — a model-based salience baseline: the answer's log-probability under each passage alone.
 - **LLM-judge culprit** — the model names the passage it thinks caused the error.
 - Deliberately excluded: exact leave-one-out as a *method* (it is the oracle — circular).
 
@@ -77,6 +78,9 @@ Retrieval-augmented generation fails most dangerously when it is confidently wro
 | The failure has a downstream cost | AUROC / risk–coverage, oracle vs deployable signals | `scripts/run_abstention.py` |
 | The rates are not sampling noise | 95% bootstrap confidence intervals | `scoring.bootstrap_intervals` |
 | The result is not one model's quirk | cross-model culprit agreement, role kappa | `scripts/run_agreement.py` |
+| The failure concentrates by type and position | per-slice scores | `scripts/run_breakdowns.py` |
+| Coalition effects bound single-chunk attribution | synergy-pair rate | `scripts/run_interactions.py` |
+| The oracle labels match human judgement | human/oracle agreement | `scripts/make_review_sheet.py` |
 | The benchmark reproduces | deterministic construction, manifest | `scripts/build_release.py`, `tests/test_release.py` |
 
 ## Before submission

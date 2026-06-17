@@ -32,3 +32,39 @@ python scripts/run_agreement.py --a runs/qwen/roles.jsonl --b runs/llama/roles.j
 ```
 
 Both model stages must run on one machine and precision, for the same reason the rest of the pipeline does: log-probabilities, and therefore the leave-one-out labels, are only comparable within a fixed numeric setting.
+
+## Robustness breakdowns
+
+`lineup.breakdowns` re-scores the methods within slices of the cases, to show where a failure concentrates rather than only its average. `by_substitution_type` separates year, number, and entity near-misses; `by_culprit_position` groups cases by where the culprit sits in the context, which exposes any position bias of the lost-in-the-middle kind.
+
+```
+python scripts/run_breakdowns.py --roles outputs/roles.jsonl --predictions outputs/predictions.jsonl
+```
+
+## Additional baseline
+
+`SingleChunkSupport` is a model-based salience baseline: it scores each passage by the answer's log-probability when that passage is the only one in context. Like the lexical baseline it tracks salience rather than cause, so it is expected to favour the near-miss; it widens the field of methods the benchmark contrasts.
+
+## Interaction probe
+
+Leave-one-out is blind to a coalition: two passages, each redundant with the other, so removing either alone leaves the answer unchanged while removing both flips it. `lineup.interaction.pairwise_interactions` checks every pair for that synergy using the same value-based causal test as the oracle, and reports the cases where it occurs.
+
+```
+python scripts/run_interactions.py --scenarios outputs/scenarios.jsonl --generations outputs/generations.jsonl --wrong-only --load-in-4bit
+```
+
+The share of cases with a coalition effect bounds how much single-chunk attribution can explain in principle, and motivates the coalition (Shapley) methods left behind the method seam.
+
+## Human validation
+
+The oracle's labels are defensible by construction, but the result is stronger for showing they match human judgement. `make_review_sheet.py` samples labelled passages — by default the contested culprit and misleading roles — into a CSV with a blank `human_role` column:
+
+```
+python scripts/make_review_sheet.py --n 30 --roles outputs/roles.jsonl --scenarios outputs/scenarios.jsonl
+```
+
+A reviewer fills the column, and `score_review.py` reports the agreement between the human labels and the oracle:
+
+```
+python scripts/score_review.py --sheet outputs/review.csv
+```

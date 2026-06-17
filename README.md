@@ -150,6 +150,14 @@ Run the pipeline under a second model and compare where the two models' errors l
 python scripts/run_agreement.py --a runs/qwen/roles.jsonl --b runs/llama/roles.jsonl
 ```
 
+Slice the scores by near-miss type and culprit position, probe for two-chunk coalition effects, and sample labelled passages for human validation:
+
+```
+python scripts/run_breakdowns.py
+python scripts/run_interactions.py --wrong-only --load-in-4bit
+python scripts/make_review_sheet.py --n 30   # fill human_role, then score_review.py --sheet outputs/review.csv
+```
+
 See [docs/analysis.md](docs/analysis.md) for what each number means.
 
 ## Tests
