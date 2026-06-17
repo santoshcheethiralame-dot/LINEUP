@@ -94,6 +94,10 @@ class TransformersModel(LanguageModel):
             # Plain transcript fallback for base models without a chat template.
             text = "\n".join(f"{m.role}: {m.content}" for m in messages) + "\nassistant:"
             ids = self.tokenizer(text, return_tensors="pt").input_ids
+        # apply_chat_template returns a bare tensor on older transformers and a
+        # BatchEncoding on newer ones; reduce both to the input-id tensor.
+        if not isinstance(ids, torch.Tensor):
+            ids = ids["input_ids"]
         return ids.to(self.device)
 
     @torch.no_grad()
