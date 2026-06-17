@@ -69,8 +69,10 @@ def _margin(prediction: MethodPrediction) -> float:
 
 
 def _oracle_confidence(case: CaseRoles) -> float:
-    # A perfect causal account: a correct answer is trustworthy, and a wrong answer that some
-    # chunk-removal turns correct is a detectable, fixable error to abstain on.
+    # A fixability oracle: trust a correct answer, and abstain on a wrong answer that some
+    # chunk-removal would have turned correct. It is the ceiling for attribution-driven
+    # abstention, not a perfect correct/wrong separator — a wrong answer that no single
+    # removal fixes is left unflagged, so its AUROC is capped by the unfixable-error rate.
     if case.original_correct:
         return 1.0
     return 0.0 if any(chunk_role.now_correct for chunk_role in case.chunk_roles) else 1.0

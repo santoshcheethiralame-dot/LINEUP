@@ -104,8 +104,6 @@ class ContextCite(AttributionMethod):
         targets = []
         for _ in range(self.n_ablations):
             mask = [rng.random() < 0.5 for _ in range(k)]
-            if not any(mask):
-                mask[rng.randrange(k)] = True
             included = [chunks[i] for i in range(k) if mask[i]]
             logprob = model.score(build_messages_for(scenario.question, included), answer).total_logprob
             masks.append([1.0 if bit else 0.0 for bit in mask])
@@ -161,8 +159,15 @@ def run_method(
         ChunkScore(chunk.chunk_id, chunk.provenance, float(score))
         for chunk, score in zip(scenario.chunks, scores)
     ]
-    best = max(range(len(chunk_scores)), key=lambda i: chunk_scores[i].score) if chunk_scores else None
-    predicted = chunk_scores[best].chunk_id if best is not None else ""
+    if chunk_scores:
+        top = max(score.score for score in chunk_scores)
+        leaders = [index for index, score in enumerate(chunk_scores) if score.score == top]
+        # Break ties without position bias: a deterministic per-(method, case) choice among
+        # the top-scoring chunks, so a method that degenerates to all-equal scores does not
+        # systematically blame whichever chunk happens to be presented first.
+        predicted = chunk_scores[_rng_for(0, f"{method.name}:{scenario.qid}").choice(leaders)].chunk_id
+    else:
+        predicted = ""
     return MethodPrediction(
         qid=scenario.qid,
         method=method.name,
