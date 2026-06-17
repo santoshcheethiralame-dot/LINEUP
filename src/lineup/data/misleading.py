@@ -53,7 +53,7 @@ def _substitute(answer: str, replacement: str, sentences: list[str]) -> list[str
 
 class MisleadingChunkBuilder(ABC):
     @abstractmethod
-    def build(self, example: QAExample, pool: dict, rng: Random):
+    def build(self, example: QAExample, pool: dict, rng: Random, *, context: str | None = None):
         ...
 
 
@@ -63,7 +63,7 @@ class ValueSubstitutionBuilder(MisleadingChunkBuilder):
     topically identical to the gold evidence and differs only in the value it asserts.
     """
 
-    def build(self, example: QAExample, pool: dict, rng: Random):
+    def build(self, example: QAExample, pool: dict, rng: Random, *, context: str | None = None):
         answer = example.answer.strip()
         if not answer:
             return None
@@ -73,7 +73,10 @@ class ValueSubstitutionBuilder(MisleadingChunkBuilder):
         source_chunk, sentence_id = location
 
         answer_type = classify_answer(answer)
-        context = example.question + " " + " ".join(source_chunk.sentences)
+        # The caller may supply the full assembled context so the planted value avoids every
+        # passage in the scenario; otherwise fall back to the question and source paragraph.
+        if context is None:
+            context = example.question + " " + " ".join(source_chunk.sentences)
         replacement = perturb_value(answer, answer_type, pool, rng, context=context)
         if not replacement or replacement.lower() == answer.lower():
             return None

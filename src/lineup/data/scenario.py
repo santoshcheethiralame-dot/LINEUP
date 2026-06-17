@@ -35,19 +35,28 @@ class ScenarioBuilder:
         if substitution_check(example) is not None:
             return None
 
-        built = self.misleading_builder.build(
-            example, self.answer_pool, self._rng(example.qid, "substitution")
-        )
-        if built is None:
-            return None
-        misleading_chunk, recipe_bits = built
-
         order_rng = self._rng(example.qid, "order")
         gold = list(example.gold_chunks)
         distractor_pool = list(example.distractor_pool)
         order_rng.shuffle(distractor_pool)
+        # k is a floor on context size: the gold chunks and the near-miss are always kept,
+        # so the count is max(k, len(gold) + 1).
         n_distractors = max(0, self.k - len(gold) - 1)
         distractors = distractor_pool[:n_distractors]
+
+        # Build the near-miss against the full assembled context, so the planted wrong value
+        # is unique to the misleading chunk and never coincides with a gold or distractor.
+        avoid_context = " ".join(
+            [example.question]
+            + [sentence for chunk in gold for sentence in chunk.sentences]
+            + [sentence for chunk in distractors for sentence in chunk.sentences]
+        )
+        built = self.misleading_builder.build(
+            example, self.answer_pool, self._rng(example.qid, "substitution"), context=avoid_context
+        )
+        if built is None:
+            return None
+        misleading_chunk, recipe_bits = built
 
         chunks = gold + [misleading_chunk] + distractors
         order_rng.shuffle(chunks)
