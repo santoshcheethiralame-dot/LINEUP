@@ -3,7 +3,7 @@ from pathlib import Path
 
 from lineup.config import DEFAULT_MODEL, DEFAULT_SEED, OUTPUT_DIR, set_seed
 from lineup.correctness import LLMJudge
-from lineup.data.hotpotqa import load_examples
+from lineup.data.sources import load_examples
 from lineup.data.scenario import ScenarioBuilder
 from lineup.data.schema import CaseRoles
 from lineup.data.serialization import (
@@ -25,6 +25,7 @@ def main() -> None:
     parser.add_argument("--limit", type=int, default=200, help="number of source questions to draw from")
     parser.add_argument("--k", type=int, default=6, help="passages per case")
     parser.add_argument("--split", default="validation")
+    parser.add_argument("--dataset", default="hotpotqa", help="source dataset: hotpotqa or 2wiki")
     parser.add_argument("--model", default=DEFAULT_MODEL)
     parser.add_argument("--seed", type=int, default=DEFAULT_SEED)
     parser.add_argument("--max-new-tokens", type=int, default=24)
@@ -40,7 +41,7 @@ def main() -> None:
         args.model, max_new_tokens=args.max_new_tokens, load_in_4bit=args.load_in_4bit
     )
 
-    examples = list(load_examples(args.split, limit=args.limit))
+    examples = list(load_examples(args.dataset, args.split, limit=args.limit))
     pool = build_answer_pool(examples)
     builder = ScenarioBuilder(answer_pool=pool, k=args.k, seed=args.seed)
     judge = LLMJudge(model)

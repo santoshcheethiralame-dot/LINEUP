@@ -87,5 +87,5 @@ Retrieval-augmented generation fails most dangerously when it is confidently wro
 
 - Scale the run well beyond the demo sizes, so the per-method rates are tight.
 - Add a second model (for example a Llama-3.1-8B-Instruct) so the labels are not tied to one model's quirks; report agreement with `scripts/run_agreement.py`.
-- Add a cross-dataset check on a second multi-hop source (2WikiMultiHopQA).
+- Add a cross-dataset check on a second multi-hop source (2WikiMultiHopQA) — the loader is wired; run with `--dataset 2wiki`.
 - Finalise the figures: the 2×2 confusion and the risk–coverage curve.

@@ -128,6 +128,8 @@ python scripts/run_abstention.py
 python scripts/run_pipeline.py --limit 200 --k 6 --load-in-4bit
 ```
 
+Add `--dataset 2wiki` to run the same pipeline on 2WikiMultiHopQA for the cross-dataset check (it shares HotpotQA's schema).
+
 `build_release.py` packages a finished run as a HuggingFace dataset — the `chunks` and `cases` configurations, a generated data card, and a `manifest.json` recording the model, seed, source split, and package versions:
 
 ```
