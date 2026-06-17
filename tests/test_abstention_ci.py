@@ -1,5 +1,5 @@
 from lineup.data.schema import GenerationResult
-from lineup.downstream import bootstrap_abstention_auroc, evaluate_abstention
+from lineup.downstream import abstention_curves, bootstrap_abstention_auroc, evaluate_abstention
 
 
 def _gen(qid, correct, logprob):
@@ -28,3 +28,10 @@ def test_auroc_bootstrap_is_seed_reproducible():
     first = bootstrap_abstention_auroc(GENERATIONS, [], None, n_boot=200, seed=3)
     second = bootstrap_abstention_auroc(GENERATIONS, [], None, n_boot=200, seed=3)
     assert first == second
+
+
+def test_abstention_curves_returns_a_curve_per_signal():
+    curves = abstention_curves(GENERATIONS, [], None)
+    coverages, risks = curves["self_logprob"]
+    assert len(coverages) == len(risks) == len(GENERATIONS)
+    assert coverages[-1] == 1.0   # full coverage at the end of the curve

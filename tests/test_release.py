@@ -1,10 +1,11 @@
 from pathlib import Path
 
 from lineup.data.scenario import ScenarioBuilder
-from lineup.data.schema import Chunk, QAExample
+from lineup.data.schema import CaseRoles, Chunk, QAExample
 from lineup.data.serialization import read_roles, read_scenarios
 from lineup.data.substitution import build_answer_pool
 from lineup.release import (
+    build_manifest,
     case_records,
     chunk_records,
     data_card,
@@ -24,7 +25,7 @@ def test_chunk_records_cover_every_passage():
     records = chunk_records(scenarios, cases)
     assert len(records) == sum(len(scenario.chunks) for scenario in scenarios)
     assert {record["provenance"] for record in records} <= {"gold", "distractor", "misleading"}
-    assert {record["role"] for record in records} <= {"culprit", "misleading", "silent", "inert", None}
+    assert {record["role"] for record in records} <= {"culprit", "misleading", "silent", "inert", ""}
 
 
 def test_case_records_one_per_case():
@@ -38,17 +39,40 @@ def test_case_records_one_per_case():
 def test_role_counts_match_the_labelled_rows():
     scenarios, cases = _load()
     counts = role_counts(cases)
-    labelled = [record for record in chunk_records(scenarios, cases) if record["role"] is not None]
+    labelled = [record for record in chunk_records(scenarios, cases) if record["role"]]
     assert sum(counts.values()) == len(labelled)
 
 
 def test_data_card_has_frontmatter_and_sections():
     scenarios, cases = _load()
-    card = data_card(dataset_statistics(scenarios, cases))
+    stats = dataset_statistics(scenarios, cases)
+    stats.update(model="Qwen/Qwen2.5-7B-Instruct", seed=0, source_dataset="hotpotqa/hotpot_qa", source_split="validation")
+    card = data_card(stats)
     assert card.startswith("---\n")
     assert "license: mit" in card
     assert "## Roles" in card
     assert "misleading-as-culprit" in card
+    assert "Qwen/Qwen2.5-7B-Instruct" in card   # the injected run metadata renders, not n/a
+
+
+def test_release_columns_stay_typed_with_no_labelled_cases():
+    scenarios, _ = _load()
+    correct = [CaseRoles(s.qid, s.question, s.gold_answer, s.gold_answer, True, []) for s in scenarios]
+    records = chunk_records(scenarios, correct)
+    assert records
+    assert all(record["role"] == "" for record in records)
+    assert all(isinstance(record["is_causal"], bool) for record in records)
+    assert all(isinstance(record["delta_logprob"], float) for record in records)
+
+
+def test_build_manifest_carries_the_reproducibility_fields():
+    manifest = build_manifest(
+        lineup_version="0.0.1", model="m", seed=0, source_dataset="d", source_split="validation",
+        created="2026-01-01T00:00:00", git_commit="abc", packages={"numpy": "2.0"}, statistics={"n_cases": 1},
+    )
+    assert manifest["model"] == "m" and manifest["seed"] == 0
+    assert manifest["source"]["dataset"] == "d"
+    assert manifest["git_commit"] == "abc" and manifest["packages"]["numpy"] == "2.0"
 
 
 def _example(qid, question, answer, gold_text):

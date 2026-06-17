@@ -20,7 +20,7 @@ The hard case is the *misleading* chunk: salient but not causal. A method that b
 This repository covers the build's nine stages (0 through 8):
 
 - **Stage 0 — infrastructure and model access.** A model backend that returns both generated text and teacher-forced token log-probabilities ([docs/stage0.md](docs/stage0.md)).
-- **Stage 1 — data foundation.** A loader over multi-hop QA that yields, per question, the gold answer, the gold supporting chunks, and a pool of realistic distractors ([docs/stage1.md](docs/stage1.md)).
+- **Stage 1 — data foundation.** A loader over multi-hop QA that yields, per question, the gold answer, the gold supporting chunks, and a pool of distractor passages — HotpotQA's own distractor paragraphs, with a BM25 retriever included for custom corpora ([docs/stage1.md](docs/stage1.md)).
 - **Stage 2 — scenario construction.** For each question, the retrieved context is assembled from the gold chunks, distractors, and one constructed organic near-miss chunk, in randomized order and with a reproducible recipe ([docs/stage2.md](docs/stage2.md)).
 - **Stage 3 — generation and correctness.** Run the model on each case, label the answer correct or wrong (exact match plus an LLM judge), and flag when the answer echoes the planted misleading value ([docs/stage3.md](docs/stage3.md)).
 - **Stage 4 — counterfactual oracle.** Assign every chunk its true role (culprit / misleading / silent / inert) by exact leave-one-out — the ground-truth labels the benchmark is built to provide ([docs/stage4.md](docs/stage4.md)).

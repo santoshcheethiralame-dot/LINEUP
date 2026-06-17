@@ -4,7 +4,6 @@ from pathlib import Path
 from lineup.config import DEFAULT_MODEL, DEFAULT_SEED, OUTPUT_DIR, set_seed
 from lineup.correctness import LLMJudge
 from lineup.data.hotpotqa import load_examples
-from lineup.data.misleading import substitution_check
 from lineup.data.scenario import ScenarioBuilder
 from lineup.data.schema import CaseRoles
 from lineup.data.serialization import (
@@ -47,14 +46,15 @@ def main() -> None:
     judge = LLMJudge(model)
 
     scenarios, generations = [], []
+    skipped = 0
     for example in examples:
-        if substitution_check(example):
-            continue
-        scenario = builder.build(example)
+        scenario = builder.build(example)   # returns None when the example cannot carry a near-miss
         if scenario is None:
+            skipped += 1
             continue
         scenarios.append(scenario)
         generations.append(generate_and_judge(model, scenario, llm_judge=judge))
+    print(f"built {len(scenarios)} cases, skipped {skipped} of {len(examples)} as unbuildable")
 
     role_cases = []
     for scenario, generation in zip(scenarios, generations):

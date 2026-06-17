@@ -34,8 +34,8 @@ def case_records(scenarios: Sequence[Scenario], cases: Sequence[CaseRoles]) -> l
                 "qid": scenario.qid,
                 "question": scenario.question,
                 "gold_answer": scenario.gold_answer,
-                "model_answer": case.original_answer if case else None,
-                "original_correct": case.original_correct if case else None,
+                "model_answer": case.original_answer if case else "",
+                "original_correct": case.original_correct if case else False,
                 "k": scenario.recipe.k,
                 "num_chunks": len(scenario.chunks),
                 "has_culprit": any(role.role == "culprit" for role in roles.values()),
@@ -61,17 +61,20 @@ def chunk_records(scenarios: Sequence[Scenario], cases: Sequence[CaseRoles]) -> 
                     "qid": scenario.qid,
                     "question": scenario.question,
                     "gold_answer": scenario.gold_answer,
-                    "model_answer": case.original_answer if case else None,
-                    "original_correct": case.original_correct if case else None,
+                    "model_answer": case.original_answer if case else "",
+                    "original_correct": case.original_correct if case else False,
                     "position": position,
                     "chunk_id": chunk.chunk_id,
                     "title": chunk.title,
                     "text": chunk.text,
                     "provenance": chunk.provenance,
-                    "role": role.role if role else None,
-                    "is_causal": role.causal if role else None,
-                    "is_salient": role.salient if role else None,
-                    "delta_logprob": role.delta_logprob if role else None,
+                    # Unlabelled passages (those in cases the model answered correctly) carry
+                    # an empty role and default flags, so every column keeps a stable type and
+                    # the dataset loads even when no case has labels. Filter on role != "".
+                    "role": role.role if role else "",
+                    "is_causal": role.causal if role else False,
+                    "is_salient": role.salient if role else False,
+                    "delta_logprob": role.delta_logprob if role else 0.0,
                 }
             )
     return records
@@ -170,7 +173,7 @@ A passage is *causal* if removing it changes the answer, and *salient* if it car
 | title | passage title |
 | text | passage text |
 | provenance | how the passage was sourced: gold, distractor, or misleading |
-| role | the ground-truth role (culprit, misleading, silent, inert); null on correct cases |
+| role | the ground-truth role (culprit, misleading, silent, inert); empty on correct cases |
 | is_causal | did removing the passage change the answer |
 | is_salient | does the passage carry the model's answer value |
 | delta_logprob | drop in the answer's log-probability when the passage is removed |
