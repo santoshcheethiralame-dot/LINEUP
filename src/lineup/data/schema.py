@@ -64,6 +64,7 @@ class GenerationResult:
     judged_by: str                    # "exact" or "judge"
     matched_intended_wrong: bool      # did the answer echo the planted misleading value?
     answer_logprob: float             # mean per-token logprob of the answer (a confidence proxy)
+    truncated: bool = False           # answer was cut off at the token budget, not a real stop
 
 
 @dataclass

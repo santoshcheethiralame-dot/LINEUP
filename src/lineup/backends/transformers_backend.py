@@ -60,6 +60,9 @@ class TransformersModel(LanguageModel):
             self.model = AutoModelForCausalLM.from_pretrained(
                 model_name, quantization_config=quantization, device_map="auto"
             )
+            # device_map dispatches layers across devices; route inputs to the embedding's
+            # device and let accelerate move activations through the rest of the model.
+            self.device = self.model.get_input_embeddings().weight.device
         else:
             self.model = AutoModelForCausalLM.from_pretrained(
                 model_name, torch_dtype=_resolve_dtype(dtype, self.device)
@@ -118,20 +121,40 @@ class TransformersModel(LanguageModel):
             step_logprobs = torch.log_softmax(step_scores[0].float(), dim=-1)
             logprobs.append(float(step_logprobs[token_id]))
         text = self.tokenizer.decode(generated, skip_special_tokens=True)
-        return Generation(text=text, token_ids=generated.tolist(), token_logprobs=logprobs)
+        budget = max_new_tokens or self.max_new_tokens
+        truncated = len(generated) >= budget and int(generated[-1]) != self.tokenizer.eos_token_id
+        return Generation(
+            text=text, token_ids=generated.tolist(), token_logprobs=logprobs, truncated=truncated
+        )
+
+    def _prompt_text(self, messages: Sequence[Message]) -> str:
+        payload = [{"role": m.role, "content": m.content} for m in messages]
+        if self.tokenizer.chat_template:
+            return self.tokenizer.apply_chat_template(payload, add_generation_prompt=True, tokenize=False)
+        return "\n".join(f"{m.role}: {m.content}" for m in messages) + "\nassistant:"
 
     @torch.no_grad()
     def score(self, messages: Sequence[Message], response: str) -> Scoring:
-        prompt_ids = self._encode_prompt(messages)
-        response_ids = self.tokenizer(
-            response, add_special_tokens=False, return_tensors="pt"
-        ).input_ids.to(self.device)
-        input_ids = torch.cat([prompt_ids, response_ids], dim=1)
+        # Tokenize the prompt and the prompt+response jointly, so the scored tokens are the
+        # ones the model actually sees in context — the suffix past the shared prefix.
+        # Tokenizing the response in isolation can split the BPE seam differently and score
+        # a token string the model would never generate.
+        prompt_text = self._prompt_text(messages)
+        prompt_ids = self.tokenizer(prompt_text, add_special_tokens=False).input_ids
+        full_ids = self.tokenizer(prompt_text + response, add_special_tokens=False).input_ids
+        prompt_len = 0
+        for left, right in zip(prompt_ids, full_ids):
+            if left != right:
+                break
+            prompt_len += 1
+        response_ids = full_ids[prompt_len:]
+        if not response_ids:
+            return Scoring(tokens=[], token_ids=[], logprobs=[])
+        input_ids = torch.tensor([full_ids], device=self.device)
         logits = self.model(input_ids).logits
-        ids = response_ids[0].tolist()
-        scored = _response_logprobs(logits, prompt_ids.shape[1], ids)
+        scored = _response_logprobs(logits, prompt_len, response_ids)
         return Scoring(
-            tokens=self.tokenizer.convert_ids_to_tokens(ids),
-            token_ids=ids,
+            tokens=self.tokenizer.convert_ids_to_tokens(response_ids),
+            token_ids=response_ids,
             logprobs=scored,
         )

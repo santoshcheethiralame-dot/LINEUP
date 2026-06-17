@@ -29,3 +29,16 @@ def test_score_is_deterministic_and_finite():
     assert first.logprobs == second.logprobs
     assert len(first.logprobs) == len(first.token_ids)
     assert all(math.isfinite(value) for value in first.logprobs)
+
+
+@pytest.mark.slow
+def test_score_handles_an_empty_response():
+    model = TransformersModel(MODEL, device="cpu", dtype="float32")
+    assert model.score([Message("user", "Hi")], "").token_ids == []
+
+
+@pytest.mark.slow
+def test_generation_exposes_a_truncated_flag():
+    model = TransformersModel(MODEL, device="cpu", dtype="float32", max_new_tokens=1)
+    generation = model.generate([Message("user", "Tell me about the history of Rome")])
+    assert isinstance(generation.truncated, bool)

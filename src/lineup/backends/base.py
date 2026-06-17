@@ -16,6 +16,7 @@ class Generation:
     text: str
     token_ids: list[int]
     token_logprobs: list[float]   # logprob of each generated token under greedy decoding
+    truncated: bool = False       # hit the token budget before the model emitted a stop token
 
     @property
     def total_logprob(self) -> float:

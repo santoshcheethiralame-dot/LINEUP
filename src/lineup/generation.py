@@ -21,4 +21,5 @@ def generate_and_judge(model: LanguageModel, scenario: Scenario, *, llm_judge=No
         judged_by=judged_by,
         matched_intended_wrong=matches_intended_wrong(answer, scenario.recipe.intended_wrong_answer),
         answer_logprob=generation.mean_logprob,
+        truncated=generation.truncated,
     )
