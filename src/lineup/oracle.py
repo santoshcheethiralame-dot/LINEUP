@@ -11,9 +11,16 @@ def answer_key(answer: str, gold: str, intended_wrong: str) -> str:
     """A canonical key for the value an answer carries, so that phrasing variants of the
     same value compare equal — a verbose "the designer was X" and a bare "X" are one
     value, and removing a chunk that only triggers a rephrase is not mistaken for causal."""
-    if contains_phrase(answer, gold):
+    has_gold = contains_phrase(answer, gold)
+    has_wrong = bool(intended_wrong) and contains_phrase(answer, intended_wrong)
+    if has_gold and has_wrong:
+        # The answer carries both values because the planted wrong value embeds the gold
+        # tokens as a sub-run (e.g. gold "D.C." inside wrong "Washington DC"). The more
+        # specific value — the one with more tokens — is the one the answer actually asserts.
+        return "wrong" if len(normalize(intended_wrong).split()) >= len(normalize(gold).split()) else "gold"
+    if has_gold:
         return "gold"
-    if intended_wrong and contains_phrase(answer, intended_wrong):
+    if has_wrong:
         return "wrong"
     return normalize(answer)
 

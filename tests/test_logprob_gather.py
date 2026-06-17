@@ -1,6 +1,7 @@
 import pytest
 
 torch = pytest.importorskip("torch")
+pytest.importorskip("transformers")
 
 from lineup.backends.transformers_backend import _response_logprobs
 

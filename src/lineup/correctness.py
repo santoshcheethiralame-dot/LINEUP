@@ -6,6 +6,7 @@ from .backends.base import Message
 from .textnorm import contains_phrase, normalize
 
 _POSITIVE = {"yes", "correct", "true"}
+_NEGATIVE = {"no", "incorrect", "false", "wrong"}
 _WORD = re.compile(r"[a-z]+")
 
 
@@ -53,6 +54,10 @@ class LLMJudge:
                 "Is the model answer correct?",
             ),
         ]
-        reply = self.model.generate(messages, max_new_tokens=4).text
-        words = _WORD.findall(reply.lower())
-        return bool(words) and words[0] in _POSITIVE
+        reply = self.model.generate(messages, max_new_tokens=8).text
+        for word in _WORD.findall(reply.lower()):
+            if word in _POSITIVE:
+                return True
+            if word in _NEGATIVE:
+                return False
+        return False

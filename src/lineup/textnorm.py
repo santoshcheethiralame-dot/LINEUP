@@ -5,11 +5,20 @@ import string
 
 _ARTICLES = re.compile(r"\b(a|an|the)\b")
 _PUNCT = str.maketrans("", "", string.punctuation)
+_THOUSANDS = re.compile(r"(?<=\d),(?=\d)")
+_DECIMAL = re.compile(r"(?<=\d)\.(?=\d)")
 
 
 def normalize(text: str) -> str:
-    """SQuAD-style normalization: lowercase, drop punctuation and articles, fold spaces."""
-    text = text.lower().translate(_PUNCT)
+    """SQuAD-style normalization: lowercase, drop punctuation and articles, fold spaces.
+
+    Digit-grouping commas are removed first (1,000 -> 1000), and a decimal point between
+    digits becomes a token break (3.14 -> "3 14") so a decimal value is not silently fused
+    into an unrelated integer ("314")."""
+    text = text.lower()
+    text = _THOUSANDS.sub("", text)
+    text = _DECIMAL.sub(" ", text)
+    text = text.translate(_PUNCT)
     text = _ARTICLES.sub(" ", text)
     return " ".join(text.split())
 
