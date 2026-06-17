@@ -136,6 +136,23 @@ class LLMJudgeCulprit(AttributionMethod):
         return [1.0 if picked == index + 1 else 0.0 for index in range(len(chunks))]
 
 
+class SingleChunkSupport(AttributionMethod):
+    """A cheap model-based salience baseline: score each chunk by the answer's log-probability
+    when that chunk is the only passage in context. A chunk that on its own makes the answer
+    likely looks responsible, whether or not it truly caused it, so like the lexical baseline
+    it is expected to favour the near-miss."""
+
+    name = "single_chunk"
+
+    def score_chunks(self, model, scenario, answer):
+        if not answer:
+            return [0.0] * len(scenario.chunks)
+        return [
+            model.score(build_messages_for(scenario.question, [chunk]), answer).total_logprob
+            for chunk in scenario.chunks
+        ]
+
+
 def run_method(
     method: AttributionMethod, model: LanguageModel, scenario: Scenario, answer: str
 ) -> MethodPrediction:

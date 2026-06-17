@@ -16,7 +16,7 @@ from lineup.data.serialization import (
 from lineup.data.substitution import build_answer_pool
 from lineup.downstream import evaluate_abstention
 from lineup.generation import generate_and_judge
-from lineup.methods import ContextCite, LexicalSimilarity, LLMJudgeCulprit, run_method
+from lineup.methods import ContextCite, LexicalSimilarity, LLMJudgeCulprit, SingleChunkSupport, run_method
 from lineup.oracle import leave_one_out
 from lineup.scoring import score_predictions
 
@@ -72,7 +72,12 @@ def main() -> None:
         else:
             role_cases.append(leave_one_out(model, scenario, generation))
 
-    methods = [ContextCite(n_ablations=args.n_ablations, seed=args.seed), LexicalSimilarity(), LLMJudgeCulprit()]
+    methods = [
+        ContextCite(n_ablations=args.n_ablations, seed=args.seed),
+        LexicalSimilarity(),
+        LLMJudgeCulprit(),
+        SingleChunkSupport(),
+    ]
     predictions = []
     for scenario, generation in zip(scenarios, generations):
         for method in methods:

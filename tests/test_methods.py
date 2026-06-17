@@ -10,6 +10,7 @@ from lineup.methods import (
     ContextCite,
     LexicalSimilarity,
     LLMJudgeCulprit,
+    SingleChunkSupport,
     _logit_from_logprob,
     run_method,
 )
@@ -84,3 +85,13 @@ def test_contextcite_attributes_to_the_supporting_chunk():
     pytest.importorskip("sklearn")
     prediction = run_method(ContextCite(n_ablations=64, seed=0), _SupportsMisleading(), _scenario(), WRONG)
     assert prediction.predicted_culprit_id == "m"   # only the misleading chunk lifts the answer's logprob
+
+
+def test_single_chunk_blames_the_passage_that_alone_supports_the_answer():
+    prediction = run_method(SingleChunkSupport(), _SupportsMisleading(), _scenario(), WRONG)
+    assert prediction.predicted_culprit_id == "m"   # alone, only the near-miss makes the answer likely
+
+
+def test_single_chunk_handles_an_empty_answer():
+    scores = SingleChunkSupport().score_chunks(_SupportsMisleading(), _scenario(), "")
+    assert scores == [0.0, 0.0, 0.0]
