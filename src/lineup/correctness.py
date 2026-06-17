@@ -20,8 +20,11 @@ def matches_intended_wrong(prediction: str, intended_wrong: str) -> bool:
 
 
 def judge_correct(question: str, gold: str, prediction: str, llm_judge=None):
-    """Decide correctness: normalized exact match first, then defer the phrasing variants
-    it misses to the LLM judge when one is supplied. Returns (is_correct, tier)."""
+    """Decide correctness: an empty answer is wrong; otherwise normalized exact match
+    first, then defer the phrasing variants it misses to the LLM judge when one is
+    supplied. Returns (is_correct, tier)."""
+    if not prediction.strip():
+        return False, "exact"
     if normalized_exact_match(prediction, gold):
         return True, "exact"
     if llm_judge is not None:

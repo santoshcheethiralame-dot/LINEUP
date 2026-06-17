@@ -19,7 +19,7 @@ Automatic correctness for short-answer QA has a well-known pitfall, noted in *Th
 1. **Normalized exact match** — lowercase, strip punctuation and articles, fold whitespace (the SQuAD convention), then compare. This tier is high-precision and model-free.
 2. **LLM judge** — for answers that miss exact match, an LLM judge is asked whether the model answer is correct given the reference, and replies yes or no. This recovers genuine phrasing variants without loosening the exact tier into the false positives that naive substring matching would admit. The verdict is read from the first word of the reply, so "Yes, correct." is parsed as readily as a bare "yes".
 
-Each verdict records which tier decided it. The judge is optional: with it disabled the stage falls back to exact match alone, which is the fast path used when developing on CPU. By default the judge is the same model that produced the answer; because the exact tier settles the bulk of cases and the judge only adjudicates phrasing variants, the scope for self-preference bias is narrow, and since the judge accepts any backend a separate or stronger model can be substituted where the compute allows.
+Each verdict records which tier decided it. The judge is optional: with it disabled the stage falls back to exact match alone, which is the fast path used when developing on CPU. By default the judge is the same model that produced the answer; because the exact tier settles the bulk of cases and the judge only adjudicates phrasing variants, the scope for self-preference bias is narrow, and since the judge accepts any backend a separate or stronger model can be substituted where the compute allows. An empty answer is counted wrong outright, without a judge call.
 
 ## The planted-value signal
 

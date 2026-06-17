@@ -1,5 +1,11 @@
 from lineup.backends.base import Generation, LanguageModel, Scoring
-from lineup.correctness import LLMJudge, matches_intended_wrong, normalize, normalized_exact_match
+from lineup.correctness import (
+    LLMJudge,
+    judge_correct,
+    matches_intended_wrong,
+    normalize,
+    normalized_exact_match,
+)
 
 
 class _Echo(LanguageModel):
@@ -37,3 +43,10 @@ def test_llm_judge_reads_the_first_word():
     assert LLMJudge(_Echo("Correct")).is_correct("q", "g", "p") is True
     assert LLMJudge(_Echo("No")).is_correct("q", "g", "p") is False
     assert LLMJudge(_Echo("Incorrect.")).is_correct("q", "g", "p") is False
+
+
+def test_judge_correct_tiers():
+    assert judge_correct("q", "Eiffel", "Eiffel") == (True, "exact")
+    assert judge_correct("q", "Eiffel", "") == (False, "exact")             # empty short-circuits
+    assert judge_correct("q", "Eiffel", "Tower")[0] is False                # no judge -> wrong
+    assert judge_correct("q", "Eiffel", "Gustave Eiffel", LLMJudge(_Echo("yes"))) == (True, "judge")
