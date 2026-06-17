@@ -69,7 +69,7 @@ PyTorch is installed first, from its CUDA index, because the version in `require
 
 ## Running the model stages
 
-Stages 3–5 need a GPU; the data and scenario stages, the scorer, the abstention study, and the tests run on CPU. Without a local GPU, run the model stages on a free Colab or Kaggle T4 (16 GB) using the notebook in `notebooks/`, which loads the 7B model in 4-bit. See [docs/running.md](docs/running.md) for the full compute split and how a second machine reproduces the run.
+Stages 3–5 need a GPU; the data and scenario stages, the scorer, the abstention study, and the tests run on CPU. Without a local GPU, run the model stages on a free Colab or Kaggle T4 (16 GB) using the notebook in `notebooks/`, which loads the 7B model in 4-bit. `notebooks/lineup_study.ipynb` runs the whole study at scale across two models and renders the result charts in one pass. See [docs/running.md](docs/running.md) for the full compute split and how a second machine reproduces the run.
 
 ## Explore the results
 
