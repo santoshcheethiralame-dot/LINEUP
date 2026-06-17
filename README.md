@@ -47,6 +47,7 @@ scripts/           runnable entry points for each stage
 notebooks/         cloud-GPU notebook for the model stages
 tests/             unit tests
 docs/              per-stage write-ups
+app/               streamlit case explorer over the saved JSONL (no GPU)
 ```
 
 ## Setup
@@ -66,6 +67,10 @@ PyTorch is installed first, from its CUDA index, because the version in `require
 ## Running the model stages
 
 Stages 3–5 need a GPU; the data and scenario stages, the scorer, the abstention study, and the tests run on CPU. Without a local GPU, run the model stages on a free Colab or Kaggle T4 (16 GB) using the notebook in `notebooks/`, which loads the 7B model in 4-bit. See [docs/running.md](docs/running.md) for the full compute split and how a second machine reproduces the run.
+
+## Explore the results
+
+The `app/` directory is a small Streamlit explorer over the saved JSONL — an overview (the per-method table, the role-distribution bars, the selective-answering AUROCs) and a per-case view that colours each chunk by its true role and shows which chunk every method blamed. It needs no GPU or model: `pip install streamlit && streamlit run app/app.py` opens it on a bundled sample, and pointing the sidebar at a run's `outputs/` shows real results. See [app/README.md](app/README.md) for deployment.
 
 ## Quickstart
 
