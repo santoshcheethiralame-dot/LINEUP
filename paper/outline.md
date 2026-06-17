@@ -75,11 +75,13 @@ Retrieval-augmented generation fails most dangerously when it is confidently wro
 | Salience methods blame the near-miss | misleading-as-culprit rate, culprit-over-misleading win-rate | `scripts/run_scoring.py` |
 | The failure is on the crux, not noise | 2×2 confusion, top-1 over cases-with-a-culprit | `scoring.py` |
 | The failure has a downstream cost | AUROC / risk–coverage, oracle vs deployable signals | `scripts/run_abstention.py` |
+| The rates are not sampling noise | 95% bootstrap confidence intervals | `scoring.bootstrap_intervals` |
+| The result is not one model's quirk | cross-model culprit agreement, role kappa | `scripts/run_agreement.py` |
 | The benchmark reproduces | deterministic construction, manifest | `scripts/build_release.py`, `tests/test_release.py` |
 
 ## Before submission
 
 - Scale the run well beyond the demo sizes, so the per-method rates are tight.
-- Add a second model (for example a Llama-3.1-8B-Instruct) so the labels are not tied to one model's quirks; report agreement.
+- Add a second model (for example a Llama-3.1-8B-Instruct) so the labels are not tied to one model's quirks; report agreement with `scripts/run_agreement.py`.
 - Add a cross-dataset check on a second multi-hop source (2WikiMultiHopQA).
 - Finalise the figures: the 2×2 confusion and the risk–coverage curve.

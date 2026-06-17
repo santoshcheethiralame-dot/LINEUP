@@ -136,6 +136,22 @@ python scripts/build_release.py --out release
 
 See [docs/stage8.md](docs/stage8.md) for the dataset schema and reproduction notes, and [paper/outline.md](paper/outline.md) for the write-up.
 
+## Analysis
+
+Add 95% bootstrap confidence intervals to the scorer, with an optional error-bar figure of the headline rate:
+
+```
+python scripts/run_scoring.py --wrong-only --bootstrap 2000 --ci-figure outputs/ci.png
+```
+
+Run the pipeline under a second model and compare where the two models' errors land:
+
+```
+python scripts/run_agreement.py --a runs/qwen/roles.jsonl --b runs/llama/roles.jsonl
+```
+
+See [docs/analysis.md](docs/analysis.md) for what each number means.
+
 ## Tests
 
 ```
