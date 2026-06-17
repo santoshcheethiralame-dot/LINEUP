@@ -2,7 +2,7 @@ from lineup.backends.base import Generation, LanguageModel, Scoring
 from lineup.data.schema import Chunk, GenerationResult, Recipe, Scenario
 from lineup.data.serialization import case_roles_from_dict
 from lineup.generation import generate_and_judge
-from lineup.oracle import assign_role, leave_one_out
+from lineup.oracle import answer_key, assign_role, is_salient, leave_one_out
 
 RIGHT = "Gustave Eiffel"
 WRONG = "Alexandre Bartholdi"
@@ -51,6 +51,23 @@ def test_assign_role_covers_the_four_quadrants():
     assert assign_role(False, True) == "misleading"
     assert assign_role(True, False) == "silent"
     assert assign_role(False, False) == "inert"
+
+
+def test_answer_key_collapses_phrasing():
+    assert answer_key("Gustave Eiffel", RIGHT, WRONG) == "gold"
+    assert answer_key("the engineer Gustave Eiffel himself", RIGHT, WRONG) == "gold"
+
+
+def test_answer_key_distinguishes_values():
+    assert answer_key(WRONG, RIGHT, WRONG) == "wrong"
+    assert answer_key(WRONG, RIGHT, WRONG) != answer_key(RIGHT, RIGHT, WRONG)
+
+
+def test_is_salient_uses_the_canonical_value_for_a_verbose_answer():
+    gold_chunk = Chunk("g", "T", f"The tower was designed by {RIGHT}.", ["..."])
+    distractor = Chunk("d", "D", "Paris is in France.", ["..."])
+    assert is_salient(gold_chunk, "the answer is Gustave Eiffel", RIGHT, WRONG)
+    assert not is_salient(distractor, "the answer is Gustave Eiffel", RIGHT, WRONG)
 
 
 def test_causal_and_salient_misleading_chunk_is_a_culprit():
