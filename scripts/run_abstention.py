@@ -3,7 +3,7 @@ from pathlib import Path
 
 from lineup.config import OUTPUT_DIR
 from lineup.data.serialization import read_generations, read_predictions, read_roles
-from lineup.downstream import abstention_curves, evaluate_abstention
+from lineup.downstream import abstention_curves, bootstrap_abstention_auroc, evaluate_abstention
 
 
 def _cell(value) -> str:
@@ -20,6 +20,22 @@ def _markdown_table(reports) -> str:
             f"| {report.signal} | {report.n} | {report.n_correct} | "
             f"{_cell(report.auroc)} | {_cell(report.aurc)} | {_cell(report.selective_accuracy_at_50)} |"
         )
+    return "\n".join(lines)
+
+
+def _fmt_ci(point, interval) -> str:
+    if point is None:
+        return "n/a"
+    low, high = interval
+    if low is None:
+        return f"{point:.3f}"
+    return f"{point:.3f} [{low:.3f}, {high:.3f}]"
+
+
+def _ci_table(reports, intervals) -> str:
+    lines = ["| signal | AUROC (95% CI) |", "| --- | --- |"]
+    for report in reports:
+        lines.append(f"| {report.signal} | {_fmt_ci(report.auroc, intervals.get(report.signal, (None, None)))} |")
     return "\n".join(lines)
 
 
@@ -50,6 +66,8 @@ def main() -> None:
     parser.add_argument("--roles", type=Path, default=OUTPUT_DIR / "roles.jsonl")
     parser.add_argument("--out", type=Path, default=OUTPUT_DIR / "abstention.md")
     parser.add_argument("--figure", type=Path, default=None, help="optional PNG of the risk-coverage curves")
+    parser.add_argument("--bootstrap", type=int, default=0, help="resamples for AUROC confidence intervals (0 = off)")
+    parser.add_argument("--seed", type=int, default=0, help="seed for the bootstrap resampling")
     args = parser.parse_args()
 
     generations = read_generations(args.generations)
@@ -65,6 +83,16 @@ def main() -> None:
 
     if args.figure is not None:
         _render_figure(generations, predictions, roles, args.figure)
+
+    if args.bootstrap:
+        intervals = bootstrap_abstention_auroc(
+            generations, predictions, roles, n_boot=args.bootstrap, seed=args.seed
+        )
+        ci_table = _ci_table(reports, intervals)
+        print("\n" + ci_table)
+        ci_path = args.out.with_name(args.out.stem + "_ci.md")
+        ci_path.write_text(ci_table + "\n", encoding="utf-8")
+        print(f"wrote {ci_path}")
 
 
 if __name__ == "__main__":

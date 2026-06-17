@@ -6,6 +6,7 @@ from dataclasses import dataclass
 from typing import Iterable
 
 from .data.schema import CaseRoles, MethodPrediction
+from .stats import percentile_interval
 
 _ROLES = ("culprit", "misleading", "silent", "inert")
 _INTERVAL_METRICS = (
@@ -117,16 +118,6 @@ def score_predictions(
     return [_aggregate(method, by_method[method]) for method in sorted(by_method)]
 
 
-def _percentile_interval(values: list, alpha: float) -> tuple:
-    defined = [value for value in values if value is not None]
-    if len(defined) < 20:
-        return (None, None)
-    ordered = sorted(defined)
-    low = ordered[int((alpha / 2) * len(ordered))]
-    high = ordered[min(len(ordered) - 1, int((1 - alpha / 2) * len(ordered)))]
-    return (low, high)
-
-
 def bootstrap_intervals(
     cases: Iterable[CaseRoles],
     predictions: Iterable[MethodPrediction],
@@ -155,5 +146,5 @@ def bootstrap_intervals(
             report = _aggregate(method, resample)
             for name in _INTERVAL_METRICS:
                 samples[name].append(getattr(report, name))
-        intervals[method] = {name: _percentile_interval(samples[name], alpha) for name in _INTERVAL_METRICS}
+        intervals[method] = {name: percentile_interval(samples[name], alpha) for name in _INTERVAL_METRICS}
     return intervals

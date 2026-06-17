@@ -1,10 +1,12 @@
 from __future__ import annotations
 
+import random
 from collections import defaultdict
 from dataclasses import dataclass
 from typing import Iterable
 
 from .data.schema import CaseRoles, GenerationResult, MethodPrediction
+from .stats import percentile_interval
 
 
 @dataclass
@@ -123,6 +125,36 @@ def evaluate_abstention(
             )
         )
     return reports
+
+
+def bootstrap_abstention_auroc(
+    generations: Iterable[GenerationResult],
+    predictions: Iterable[MethodPrediction],
+    roles: Iterable[CaseRoles] | None = None,
+    *,
+    n_boot: int = 1000,
+    seed: int = 0,
+    alpha: float = 0.05,
+) -> dict:
+    """Per-signal confidence intervals for the abstention AUROC, by resampling cases.
+
+    Returns {signal: (low, high)}. The case is the resampling unit, so the interval reflects
+    how far a different draw of questions could move each signal's separating power.
+    """
+    qids, correct, signals = _collect_signals(generations, predictions, roles)
+    n = len(qids)
+    if n == 0:
+        return {name: (None, None) for name in signals}
+    rng = random.Random(seed)
+    samples: dict = {name: [] for name in signals}
+    for _ in range(n_boot):
+        resample = [qids[rng.randrange(n)] for _ in range(n)]
+        for name, confidence in signals.items():
+            common = [qid for qid in resample if qid in confidence]
+            scores = [confidence[qid] for qid in common]
+            labels = [correct[qid] for qid in common]
+            samples[name].append(_auroc(scores, labels))
+    return {name: percentile_interval(samples[name], alpha) for name in signals}
 
 
 def abstention_curves(generations, predictions, roles=None) -> dict:

@@ -99,6 +99,36 @@ def _render_figure(reports, path: Path) -> None:
     print(f"wrote {path}")
 
 
+def _render_confusion_figure(reports, path: Path) -> None:
+    import matplotlib
+
+    matplotlib.use("Agg")
+    import matplotlib.pyplot as plt
+
+    roles = ("culprit", "misleading", "silent", "inert")
+    methods = [report.method for report in reports]
+    matrix = [[report.predicted_role_rate.get(role, 0.0) for role in roles] for report in reports]
+    figure, axis = plt.subplots(figsize=(6, 0.9 * len(methods) + 1.5))
+    image = axis.imshow(matrix, cmap="magma", vmin=0.0, vmax=1.0, aspect="auto")
+    axis.set_xticks(range(len(roles)))
+    axis.set_xticklabels(roles)
+    axis.set_yticks(range(len(methods)))
+    axis.set_yticklabels(methods)
+    for i in range(len(methods)):
+        for j in range(len(roles)):
+            value = matrix[i][j]
+            axis.text(
+                j, i, f"{value:.2f}", ha="center", va="center",
+                color="white" if value < 0.5 else "black", fontsize=9,
+            )
+    axis.set_title("Where each method's predicted culprit truly lands")
+    figure.colorbar(image, ax=axis, label="share of predictions")
+    figure.tight_layout()
+    path.parent.mkdir(parents=True, exist_ok=True)
+    figure.savefig(path, dpi=150)
+    print(f"wrote {path}")
+
+
 def main() -> None:
     parser = argparse.ArgumentParser()
     parser.add_argument("--roles", type=Path, default=OUTPUT_DIR / "roles.jsonl")
@@ -109,6 +139,7 @@ def main() -> None:
     parser.add_argument("--bootstrap", type=int, default=0, help="resamples for confidence intervals (0 = off)")
     parser.add_argument("--seed", type=int, default=0, help="seed for the bootstrap resampling")
     parser.add_argument("--ci-figure", type=Path, default=None, help="optional PNG of misleading-as-culprit with CIs")
+    parser.add_argument("--confusion-figure", type=Path, default=None, help="optional PNG of the predicted-role heatmap")
     args = parser.parse_args()
 
     cases = read_roles(args.roles)
@@ -125,6 +156,9 @@ def main() -> None:
 
     if args.figure is not None:
         _render_figure(reports, args.figure)
+
+    if args.confusion_figure is not None:
+        _render_confusion_figure(reports, args.confusion_figure)
 
     if args.bootstrap:
         intervals = bootstrap_intervals(cases, predictions, n_boot=args.bootstrap, seed=args.seed)
