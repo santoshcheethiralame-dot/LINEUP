@@ -17,13 +17,14 @@ The hard case is the *misleading* chunk: salient but not causal. A method that b
 
 ## Status
 
-This repository currently covers the first five stages of the build:
+This repository currently covers the first six stages of the build:
 
 - **Stage 0 — infrastructure and model access.** A model backend that returns both generated text and teacher-forced token log-probabilities ([docs/stage0.md](docs/stage0.md)).
 - **Stage 1 — data foundation.** A loader over multi-hop QA that yields, per question, the gold answer, the gold supporting chunks, and a pool of realistic distractors ([docs/stage1.md](docs/stage1.md)).
 - **Stage 2 — scenario construction.** For each question, the retrieved context is assembled from the gold chunks, distractors, and one constructed organic near-miss chunk, in randomized order and with a reproducible recipe ([docs/stage2.md](docs/stage2.md)).
 - **Stage 3 — generation and correctness.** Run the model on each case, label the answer correct or wrong (exact match plus an LLM judge), and flag when the answer echoes the planted misleading value ([docs/stage3.md](docs/stage3.md)).
 - **Stage 4 — counterfactual oracle.** Assign every chunk its true role (culprit / misleading / silent / inert) by exact leave-one-out — the ground-truth labels the benchmark is built to provide ([docs/stage4.md](docs/stage4.md)).
+- **Stage 5 — method runners.** Run the attribution methods under test (ContextCite, a lexical-similarity baseline, an LLM judge), each predicting a culprit per chunk for Stage 6 to grade ([docs/stage5.md](docs/stage5.md)).
 
 ## Layout
 
@@ -37,6 +38,7 @@ src/lineup/
   correctness.py   answer matching and the LLM judge
   generation.py    run the model and label correctness
   oracle.py        leave-one-out role assignment
+  methods.py       attribution methods under test (ContextCite, baselines)
 scripts/           runnable entry points for each stage
 notebooks/         cloud-GPU notebook for the model stages
 tests/             unit tests
@@ -91,6 +93,12 @@ Assign every chunk its ground-truth role by leave-one-out (needs a GPU):
 
 ```
 python scripts/run_oracle.py --wrong-only
+```
+
+Run the attribution methods under test and record their predicted culprits (needs a GPU):
+
+```
+python scripts/run_methods.py --wrong-only
 ```
 
 ## Tests
