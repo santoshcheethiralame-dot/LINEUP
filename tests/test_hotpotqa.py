@@ -29,3 +29,18 @@ def test_parse_splits_gold_and_distractors():
     assert derrickson.provenance == "gold"
     assert derrickson.supporting_sentence_ids == (0,)
     assert example.distractor_pool[0].provenance == "distractor"
+
+
+def test_parse_handles_record_layout():
+    raw = {
+        "id": "x", "question": "q?", "answer": "yes", "type": "comparison", "level": "hard",
+        "context": [
+            {"title": "A", "sentences": ["A is American."]},
+            {"title": "B", "sentences": ["B is British."]},
+        ],
+        "supporting_facts": [{"title": "A", "sent_id": 0}],
+    }
+    example = parse_example(raw)
+    assert [c.title for c in example.gold_chunks] == ["A"]
+    assert [c.title for c in example.distractor_pool] == ["B"]
+    assert example.gold_chunks[0].supporting_sentence_ids == (0,)

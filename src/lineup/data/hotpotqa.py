@@ -5,16 +5,24 @@ from typing import Iterator
 from .schema import Chunk, QAExample
 
 
-def _supporting_map(supporting_facts: dict) -> dict:
+def _columns(value, *keys):
+    """Read either a dict of parallel lists or a list of dicts as parallel lists, so the
+    parser works whether a dataset row uses the columnar or the record layout."""
+    if isinstance(value, dict):
+        return tuple(value[key] for key in keys)
+    return tuple([row[key] for row in value] for key in keys)
+
+
+def _supporting_map(supporting_facts) -> dict:
+    titles, sent_ids = _columns(supporting_facts, "title", "sent_id")
     by_title: dict = {}
-    for title, sent_id in zip(supporting_facts["title"], supporting_facts["sent_id"]):
+    for title, sent_id in zip(titles, sent_ids):
         by_title.setdefault(title, set()).add(int(sent_id))
     return by_title
 
 
 def parse_example(raw: dict) -> QAExample:
-    titles = raw["context"]["title"]
-    sentences = raw["context"]["sentences"]
+    titles, sentences = _columns(raw["context"], "title", "sentences")
     supporting = _supporting_map(raw["supporting_facts"])
 
     gold: list[Chunk] = []
@@ -37,11 +45,7 @@ def parse_example(raw: dict) -> QAExample:
         answer=raw["answer"].strip(),
         gold_chunks=gold,
         distractor_pool=distractors,
-        meta={
-            "type": raw.get("type"),
-            "level": raw.get("level"),
-            "source": "hotpotqa",
-        },
+        meta={"type": raw.get("type"), "level": raw.get("level"), "source": "hotpotqa"},
     )
 
 
