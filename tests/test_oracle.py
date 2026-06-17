@@ -20,6 +20,18 @@ def _scenario() -> Scenario:
     return Scenario(qid="q", question="Who designed the Eiffel Tower?", gold_answer=RIGHT, chunks=[gold, misleading, distractor], recipe=recipe)
 
 
+def _bridge_scenario() -> Scenario:
+    bridge = Chunk("b", "Hint", "The designer trained at BRIDGEFACT Institute.", ["The designer trained at BRIDGEFACT Institute."], provenance="distractor")
+    gold = Chunk("g", "Eiffel Tower", f"The tower was designed by {RIGHT}.", [f"The tower was designed by {RIGHT}."], provenance="gold")
+    misleading = Chunk("m", "Eiffel Tower", f"The tower was designed by {WRONG}.", [f"The tower was designed by {WRONG}."], provenance="misleading")
+    recipe = Recipe(
+        seed=0, k=3, original_value=RIGHT, intended_wrong_answer=WRONG, substitution_type="entity",
+        source_gold_chunk_id="g", source_sentence_id=0, gold_chunk_ids=["g"],
+        misleading_chunk_id="m", distractor_chunk_ids=["b"], order=["b", "g", "m"],
+    )
+    return Scenario(qid="q2", question="Who designed the Eiffel Tower?", gold_answer=RIGHT, chunks=[bridge, gold, misleading], recipe=recipe)
+
+
 class _Triggered(LanguageModel):
     """Answers WRONG when the misleading chunk's value is in context, else RIGHT."""
 
@@ -37,6 +49,27 @@ class _AlwaysWrong(LanguageModel):
 
     def generate(self, messages, max_new_tokens=None):
         return Generation(WRONG, [1], [-0.1])
+
+    def score(self, messages, response):
+        return Scoring([], [], [-1.0])
+
+
+class _BridgeKeyed(LanguageModel):
+    """Answers RIGHT only while a non-answer "bridge" marker is present in context."""
+
+    def generate(self, messages, max_new_tokens=None):
+        present = "BRIDGEFACT" in messages[-1].content
+        return Generation(RIGHT if present else "Someone Else", [1], [-0.1])
+
+    def score(self, messages, response):
+        return Scoring([], [], [-1.0])
+
+
+class _VerboseCorrect(LanguageModel):
+    """Always answers correctly, but as a full sentence that no chunk contains verbatim."""
+
+    def generate(self, messages, max_new_tokens=None):
+        return Generation(f"The designer of the tower was {RIGHT}.", [1], [-0.1])
 
     def score(self, messages, response):
         return Scoring([], [], [-1.0])
@@ -96,6 +129,26 @@ def test_salient_but_non_causal_misleading_chunk_is_misleading():
     assert roles["misleading"].role == "misleading"   # looks responsible but removing it changes nothing
     assert roles["misleading"].causal is False
     assert roles["misleading"].salient is True
+
+
+def test_causal_but_non_salient_chunk_is_silent():
+    scenario = _bridge_scenario()
+    model = _BridgeKeyed()
+    original = generate_and_judge(model, scenario)
+    assert original.model_answer == RIGHT             # the bridge marker is present in the full context
+
+    case = leave_one_out(model, scenario, original)
+    roles = {role.chunk_id: role for role in case.chunk_roles}
+    assert roles["b"].role == "silent"                # removing it changes the answer, but it does not hold the answer
+    assert roles["b"].causal is True
+    assert roles["b"].salient is False
+
+
+def test_verbose_answer_is_matched_to_its_gold_chunk():
+    scenario = _scenario()
+    case = leave_one_out(_VerboseCorrect(), scenario, generate_and_judge(_VerboseCorrect(), scenario))
+    roles = _roles_by_provenance(case)
+    assert roles["gold"].salient is True              # the gold chunk holds the value the verbose answer carries
 
 
 def test_case_roles_round_trip_through_dict():
