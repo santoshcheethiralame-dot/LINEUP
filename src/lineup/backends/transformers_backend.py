@@ -66,6 +66,12 @@ class TransformersModel(LanguageModel):
             )
             self.model.to(self.device)
         self.model.eval()
+        # Greedy decoding ignores the sampling parameters some models ship in their
+        # generation config; clearing them silences a per-call warning without any change
+        # in behaviour.
+        for attribute in ("temperature", "top_p", "top_k"):
+            if getattr(self.model.generation_config, attribute, None) is not None:
+                setattr(self.model.generation_config, attribute, None)
         self.max_new_tokens = max_new_tokens
 
     @classmethod
