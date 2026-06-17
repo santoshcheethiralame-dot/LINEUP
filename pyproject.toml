@@ -9,12 +9,12 @@ description = "A controlled benchmark for organic chunk-role attribution in retr
 readme = "README.md"
 requires-python = ">=3.10"
 # Lower bounds only (the code runs on numpy 2 and scikit-learn 1.6, as CI confirms), so an
-# editable install does not downgrade a hosted environment such as Colab. The one upper bound
-# is datasets < 4, because the HotpotQA loader uses a script-based dataset that 4.x removed.
-# Exact, reproducible versions for a local GPU run live in requirements.txt.
+# editable install does not downgrade a hosted environment such as Colab. HotpotQA is loaded
+# from its parquet-native repo, so no datasets upper bound is needed either. Exact, reproducible
+# versions for a local GPU run live in requirements.txt.
 dependencies = [
     "transformers>=4.45",
-    "datasets>=2.18,<4.0",
+    "datasets>=2.18",
     "accelerate>=1.0",
     "rank-bm25>=0.2.2",
     "scikit-learn>=1.4",
