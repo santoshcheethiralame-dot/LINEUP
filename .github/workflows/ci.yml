@@ -12,9 +12,9 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: "3.11"
-      # The fast suite is model-free; install only what it needs and let the
-      # torch-backed backend tests skip. The model stages are exercised on a GPU
-      # with `pytest -m slow`, not in CI.
-      - run: pip install rank-bm25 pytest
+      # The fast suite is model-free; install only what it needs (scikit-learn covers the
+      # ContextCite surrogate) and let the torch-backed backend tests skip. The model stages
+      # are exercised on a GPU with `pytest -m slow`, not in CI.
+      - run: pip install rank-bm25 scikit-learn pytest
       - run: pip install -e . --no-deps
       - run: pytest
