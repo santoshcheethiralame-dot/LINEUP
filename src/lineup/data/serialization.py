@@ -5,7 +5,16 @@ import json
 from pathlib import Path
 from typing import Iterable
 
-from .schema import CaseRoles, Chunk, ChunkRole, GenerationResult, Recipe, Scenario
+from .schema import (
+    CaseRoles,
+    Chunk,
+    ChunkRole,
+    ChunkScore,
+    GenerationResult,
+    MethodPrediction,
+    Recipe,
+    Scenario,
+)
 
 
 def scenario_to_dict(scenario: Scenario) -> dict:
@@ -36,6 +45,15 @@ def case_roles_from_dict(data: dict) -> CaseRoles:
         original_answer=data["original_answer"],
         original_correct=data["original_correct"],
         chunk_roles=[ChunkRole(**role) for role in data["chunk_roles"]],
+    )
+
+
+def method_prediction_from_dict(data: dict) -> MethodPrediction:
+    return MethodPrediction(
+        qid=data["qid"],
+        method=data["method"],
+        predicted_culprit_id=data["predicted_culprit_id"],
+        chunk_scores=[ChunkScore(**score) for score in data["chunk_scores"]],
     )
 
 
@@ -78,3 +96,11 @@ def write_roles(path, cases: Iterable[CaseRoles]) -> None:
 
 def read_roles(path) -> list[CaseRoles]:
     return _read_jsonl(path, case_roles_from_dict)
+
+
+def write_predictions(path, predictions: Iterable[MethodPrediction]) -> None:
+    _write_jsonl(path, predictions, dataclasses.asdict)
+
+
+def read_predictions(path) -> list[MethodPrediction]:
+    return _read_jsonl(path, method_prediction_from_dict)

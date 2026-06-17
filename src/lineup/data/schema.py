@@ -74,7 +74,7 @@ class ChunkRole:
     provenance: str                   # gold / distractor / misleading (where it came from)
     role: str                         # culprit / misleading / silent / inert (the 2x2 quadrant)
     causal: bool                      # did removing it change the model's answer?
-    salient: bool                     # does the chunk contain the model's answer?
+    salient: bool                     # does the chunk hold the model's answer?
     now_correct: bool                 # was the answer correct once this chunk was removed?
     delta_logprob: float              # drop in the answer's logprob when this chunk is removed
     answer_without: str               # the answer the model gave with this chunk removed
@@ -90,3 +90,22 @@ class CaseRoles:
     original_answer: str
     original_correct: bool
     chunk_roles: list[ChunkRole]
+
+
+@dataclass
+class ChunkScore:
+    """One method's score for one chunk; a higher score means more responsible."""
+
+    chunk_id: str
+    provenance: str
+    score: float
+
+
+@dataclass
+class MethodPrediction:
+    """One method's per-chunk scores and predicted culprit for one case."""
+
+    qid: str
+    method: str
+    predicted_culprit_id: str
+    chunk_scores: list[ChunkScore]
