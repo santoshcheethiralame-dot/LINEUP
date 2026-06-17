@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import hashlib
+import math
 import re
 from abc import ABC, abstractmethod
 from random import Random
@@ -35,6 +36,24 @@ def _rng_for(seed: int, qid: str) -> Random:
     return Random(int.from_bytes(digest[:8], "big"))
 
 
+def _log1mexp(x: float) -> float:
+    # Numerically stable log(1 - exp(x)) for x < 0 (Maechler's split at -log 2).
+    if x > -0.6931471805599453:
+        return math.log(-math.expm1(x))
+    return math.log1p(-math.exp(x))
+
+
+def _logit_from_logprob(logprob: float) -> float:
+    # The logit of the response probability, which is the target ContextCite regresses
+    # against. Clamp away from zero so a fully confident response (p = 1) stays finite.
+    clamped = min(logprob, -1e-6)
+    return clamped - _log1mexp(clamped)
+
+
+def _target(logprob: float, transform: str) -> float:
+    return _logit_from_logprob(logprob) if transform == "logit" else logprob
+
+
 class AttributionMethod(ABC):
     """A method under test: given the scenario and the model's answer, score every chunk
     so that a higher score means more responsible. The predicted culprit is the argmax."""
@@ -60,15 +79,16 @@ class LexicalSimilarity(AttributionMethod):
 
 class ContextCite(AttributionMethod):
     """ContextCite: sample random ablations of the context, teacher-force-score the fixed
-    answer under each, and fit a sparse linear surrogate of the answer's log-probability
-    against the inclusion mask. The Lasso weights are the per-chunk attribution."""
+    answer under each, and fit a sparse linear surrogate of the answer's (logit-transformed)
+    probability against the inclusion mask. The Lasso weights are the per-chunk attribution."""
 
     name = "contextcite"
 
-    def __init__(self, n_ablations: int = 32, alpha: float = 0.01, seed: int = 0):
+    def __init__(self, n_ablations: int = 32, alpha: float = 0.01, seed: int = 0, transform: str = "logit"):
         self.n_ablations = n_ablations
         self.alpha = alpha
         self.seed = seed
+        self.transform = transform
 
     def score_chunks(self, model, scenario, answer):
         import numpy as np
@@ -89,7 +109,7 @@ class ContextCite(AttributionMethod):
             included = [chunks[i] for i in range(k) if mask[i]]
             logprob = model.score(build_messages_for(scenario.question, included), answer).total_logprob
             masks.append([1.0 if bit else 0.0 for bit in mask])
-            targets.append(logprob)
+            targets.append(_target(logprob, self.transform))
 
         surrogate = Lasso(alpha=self.alpha).fit(np.array(masks), np.array(targets))
         return [float(weight) for weight in surrogate.coef_]

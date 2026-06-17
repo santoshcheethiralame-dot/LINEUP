@@ -1,11 +1,18 @@
 import dataclasses
+import math
 
 import pytest
 
 from lineup.backends.base import Generation, LanguageModel, Scoring
 from lineup.data.schema import Chunk, Recipe, Scenario
 from lineup.data.serialization import method_prediction_from_dict
-from lineup.methods import ContextCite, LexicalSimilarity, LLMJudgeCulprit, run_method
+from lineup.methods import (
+    ContextCite,
+    LexicalSimilarity,
+    LLMJudgeCulprit,
+    _logit_from_logprob,
+    run_method,
+)
 
 RIGHT = "Gustave Eiffel"
 WRONG = "Alexandre Bartholdi"
@@ -40,6 +47,14 @@ class _SupportsMisleading(LanguageModel):
     def score(self, messages, response):
         present = WRONG in messages[-1].content
         return Scoring([], [], [0.0] if present else [-5.0])
+
+
+def test_logit_from_logprob_is_finite_and_monotonic():
+    low = _logit_from_logprob(-5.0)
+    high = _logit_from_logprob(-1.0)
+    assert math.isfinite(low) and math.isfinite(high)
+    assert high > low                              # a higher logprob gives a higher logit
+    assert math.isfinite(_logit_from_logprob(0.0))  # a fully confident answer stays finite
 
 
 def test_lexical_similarity_blames_the_chunk_matching_the_answer():
