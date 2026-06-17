@@ -21,6 +21,8 @@ htmlcov/
 # Data, model cache, run artifacts (kept out of version control)
 /data/
 /outputs/
+/runs/
+/release/
 .cache/
 
 # Local environment

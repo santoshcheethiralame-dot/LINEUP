@@ -17,7 +17,7 @@ The hard case is the *misleading* chunk: salient but not causal. A method that b
 
 ## Status
 
-This repository currently covers the first eight stages of the build (0 through 7):
+This repository covers the build's nine stages (0 through 8):
 
 - **Stage 0 — infrastructure and model access.** A model backend that returns both generated text and teacher-forced token log-probabilities ([docs/stage0.md](docs/stage0.md)).
 - **Stage 1 — data foundation.** A loader over multi-hop QA that yields, per question, the gold answer, the gold supporting chunks, and a pool of realistic distractors ([docs/stage1.md](docs/stage1.md)).
@@ -27,6 +27,7 @@ This repository currently covers the first eight stages of the build (0 through 
 - **Stage 5 — method runners.** Run the attribution methods under test (ContextCite, a lexical-similarity baseline, an LLM judge), each predicting a culprit per chunk ([docs/stage5.md](docs/stage5.md)).
 - **Stage 6 — scorer.** Join the predictions to the oracle roles and compute the headline misleading-as-culprit rate, top-1 culprit accuracy, and the 2×2 confusion ([docs/stage6.md](docs/stage6.md)).
 - **Stage 7 — downstream experiment.** A selective-QA / abstention study testing whether the attribution failure has a cost: can a confidence signal (self-confidence, attribution decisiveness, or an oracle upper bound) tell correct answers from wrong ones ([docs/stage7.md](docs/stage7.md)).
+- **Stage 8 — release and write-up.** Package a run as a HuggingFace dataset with a data card and a reproducibility manifest, a one-command pipeline harness, and the paper outline ([docs/stage8.md](docs/stage8.md)).
 
 ## Layout
 
@@ -43,11 +44,13 @@ src/lineup/
   methods.py       attribution methods under test (ContextCite, baselines)
   scoring.py       grade predictions against the oracle roles
   downstream.py    selective-QA / abstention experiment
+  release.py       package a run as a dataset with a data card
 scripts/           runnable entry points for each stage
 notebooks/         cloud-GPU notebook for the model stages
 tests/             unit tests
 docs/              per-stage write-ups
 app/               streamlit case explorer over the saved JSONL (no GPU)
+paper/             paper outline and claim-to-evidence map
 ```
 
 ## Setup
@@ -116,6 +119,22 @@ Grade the methods against the ground-truth roles, and test whether attribution h
 python scripts/run_scoring.py --wrong-only
 python scripts/run_abstention.py
 ```
+
+## Release
+
+`run_pipeline.py` runs every stage end to end on a GPU and writes the four JSONL files:
+
+```
+python scripts/run_pipeline.py --limit 200 --k 6 --load-in-4bit
+```
+
+`build_release.py` packages a finished run as a HuggingFace dataset — the `chunks` and `cases` configurations, a generated data card, and a `manifest.json` recording the model, seed, source split, and package versions:
+
+```
+python scripts/build_release.py --out release
+```
+
+See [docs/stage8.md](docs/stage8.md) for the dataset schema and reproduction notes, and [paper/outline.md](paper/outline.md) for the write-up.
 
 ## Tests
 
