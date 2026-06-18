@@ -11,6 +11,7 @@ sys.path.insert(0, str(ROOT / "app"))
 
 import render  # noqa: E402
 import run_abstention  # noqa: E402
+import run_dashboard  # noqa: E402
 import run_scoring  # noqa: E402
 from lineup.scoring import bootstrap_intervals  # noqa: E402
 
@@ -33,3 +34,8 @@ def test_abstention_figure_writes_a_non_empty_file(tmp_path):
     _, generations, roles, predictions, _ = render.load(SAMPLE)
     run_abstention._render_figure(list(generations.values()), predictions, list(roles.values()), tmp_path / "rc.png")
     assert (tmp_path / "rc.png").stat().st_size > 0
+
+
+def test_dashboard_script_writes_a_non_empty_file(tmp_path):
+    run_dashboard.render_dashboard({"sample": SAMPLE}, n_boot=50, out=str(tmp_path / "dash.png"))
+    assert (tmp_path / "dash.png").stat().st_size > 0
