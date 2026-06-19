@@ -1,6 +1,9 @@
+from lineup.backends.base import Generation, LanguageModel, Scoring
 from lineup.data.scenario import ScenarioBuilder
 from lineup.data.schema import Chunk, QAExample
 from lineup.data.substitution import build_answer_pool
+from lineup.generation import generate_and_judge
+from lineup.oracle import leave_one_out
 from lineup.textnorm import contains_phrase
 
 
@@ -37,3 +40,37 @@ def test_normal_mode_adds_no_decoy():
     assert scenario is not None
     assert scenario.recipe.decoy_chunk_id == ""
     assert all(c.provenance != "decoy" for c in scenario.chunks)
+
+
+class _RedundancyFooled(LanguageModel):
+    """Adopts the wrong value whenever any present passage asserts it; else gives the gold answer."""
+
+    def __init__(self, gold, wrong):
+        self._gold, self._wrong = gold, wrong
+
+    def generate(self, messages, max_new_tokens=None):
+        present = self._wrong in messages[-1].content
+        return Generation(self._wrong if present else self._gold, [1], [-0.1])
+
+    def score(self, messages, response):
+        return Scoring([], [], [-0.1])
+
+
+def test_redundant_decoy_dissolves_the_single_culprit():
+    # The mechanism check: a model fooled by either redundant copy should, under hard traps,
+    # have NO single culprit (each wrong-value chunk is non-causal) — both become misleading.
+    normal = ScenarioBuilder(answer_pool=POOL, k=6, seed=0).build(EXAMPLE)
+    wrong = normal.recipe.intended_wrong_answer
+    model = _RedundancyFooled(EXAMPLE.answer, wrong)
+
+    generation = generate_and_judge(model, normal, llm_judge=None)
+    assert not generation.is_correct
+    normal_roles = leave_one_out(model, normal, generation)
+    assert any(role.role == "culprit" for role in normal_roles.chunk_roles)   # lone near-miss is the culprit
+
+    hard = ScenarioBuilder(answer_pool=POOL, k=6, seed=0, hard_traps=True).build(EXAMPLE)
+    hard_generation = generate_and_judge(model, hard, llm_judge=None)
+    assert not hard_generation.is_correct
+    hard_roles = leave_one_out(model, hard, hard_generation)
+    assert not any(role.role == "culprit" for role in hard_roles.chunk_roles)   # redundancy dissolves it
+    assert sum(role.role == "misleading" for role in hard_roles.chunk_roles) >= 2
