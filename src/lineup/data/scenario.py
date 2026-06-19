@@ -3,7 +3,7 @@ from __future__ import annotations
 import hashlib
 import random
 
-from .misleading import MisleadingChunkBuilder, ValueSubstitutionBuilder, substitution_check
+from .misleading import MisleadingChunkBuilder, ValueSubstitutionBuilder, redundant_decoy, substitution_check
 from .schema import QAExample, Recipe, Scenario
 
 
@@ -18,11 +18,13 @@ class ScenarioBuilder:
         k: int = 10,
         seed: int = 0,
         misleading_builder: MisleadingChunkBuilder | None = None,
+        hard_traps: bool = False,
     ):
         self.answer_pool = answer_pool
         self.k = k
         self.seed = seed
         self.misleading_builder = misleading_builder or ValueSubstitutionBuilder()
+        self.hard_traps = hard_traps
 
     def _rng(self, qid: str, salt: str) -> random.Random:
         # A stable per-question seed: the built-in hash() is salted per process and would
@@ -41,7 +43,8 @@ class ScenarioBuilder:
         order_rng.shuffle(distractor_pool)
         # k is a floor on context size: the gold chunks and the near-miss are always kept,
         # so the count is max(k, len(gold) + 1).
-        n_distractors = max(0, self.k - len(gold) - 1)
+        n_extra = 1 if self.hard_traps else 0
+        n_distractors = max(0, self.k - len(gold) - 1 - n_extra)
         distractors = distractor_pool[:n_distractors]
 
         # Build the near-miss against the full assembled context, so the planted wrong value
@@ -58,7 +61,10 @@ class ScenarioBuilder:
             return None
         misleading_chunk, recipe_bits = built
 
-        chunks = gold + [misleading_chunk] + distractors
+        extra = []
+        if self.hard_traps:
+            extra = [redundant_decoy(example.qid, misleading_chunk, recipe_bits["intended_wrong_answer"])]
+        chunks = gold + [misleading_chunk] + extra + distractors
         order_rng.shuffle(chunks)
 
         recipe = Recipe(
@@ -72,6 +78,7 @@ class ScenarioBuilder:
             gold_chunk_ids=[chunk.chunk_id for chunk in gold],
             misleading_chunk_id=misleading_chunk.chunk_id,
             distractor_chunk_ids=[chunk.chunk_id for chunk in distractors],
+            decoy_chunk_id=extra[0].chunk_id if extra else "",
             order=[chunk.chunk_id for chunk in chunks],
         )
         return Scenario(

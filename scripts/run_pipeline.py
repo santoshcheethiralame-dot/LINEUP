@@ -26,6 +26,7 @@ def main() -> None:
     parser.add_argument("--k", type=int, default=6, help="passages per case")
     parser.add_argument("--split", default="validation")
     parser.add_argument("--dataset", default="hotpotqa", help="source dataset: hotpotqa or 2wiki")
+    parser.add_argument("--hard-traps", action="store_true", help="add a salient red-herring decoy per case")
     parser.add_argument("--model", default=DEFAULT_MODEL)
     parser.add_argument("--seed", type=int, default=DEFAULT_SEED)
     parser.add_argument("--max-new-tokens", type=int, default=24)
@@ -43,7 +44,7 @@ def main() -> None:
 
     examples = list(load_examples(args.dataset, args.split, limit=args.limit))
     pool = build_answer_pool(examples)
-    builder = ScenarioBuilder(answer_pool=pool, k=args.k, seed=args.seed)
+    builder = ScenarioBuilder(answer_pool=pool, k=args.k, seed=args.seed, hard_traps=args.hard_traps)
     judge = LLMJudge(model)
 
     scenarios, generations = [], []

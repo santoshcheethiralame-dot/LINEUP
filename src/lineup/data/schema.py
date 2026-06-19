@@ -40,6 +40,7 @@ class Recipe:
     misleading_chunk_id: str
     distractor_chunk_ids: list[str]
     order: list[str]                  # chunk ids in the order presented to the model
+    decoy_chunk_id: str = ""          # a harder-trap salient red-herring, when one was added
 
 
 @dataclass
