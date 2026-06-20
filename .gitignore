@@ -23,6 +23,7 @@ htmlcov/
 /outputs/
 /runs/
 /release/
+/paper/results_data/
 .cache/
 
 # Local environment
