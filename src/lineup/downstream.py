@@ -6,6 +6,7 @@ from dataclasses import dataclass
 from typing import Iterable
 
 from .data.schema import CaseRoles, GenerationResult, MethodPrediction
+from .stats import auroc as _auroc
 from .stats import percentile_interval
 
 
@@ -17,26 +18,6 @@ class AbstentionReport:
     auroc: float | None                       # confidence separates correct from wrong answers
     aurc: float | None                        # area under the risk-coverage curve (lower is better)
     selective_accuracy_at_50: float | None    # accuracy on the most-confident half
-
-
-def _auroc(scores: list, labels: list) -> float | None:
-    positives = sum(1 for label in labels if label)
-    negatives = len(labels) - positives
-    if positives == 0 or negatives == 0:
-        return None
-    ordered = sorted(zip(scores, labels), key=lambda pair: pair[0])
-    ranks = [0.0] * len(ordered)
-    i = 0
-    while i < len(ordered):
-        j = i
-        while j < len(ordered) and ordered[j][0] == ordered[i][0]:
-            j += 1
-        average = (i + j - 1) / 2 + 1
-        for index in range(i, j):
-            ranks[index] = average
-        i = j
-    positive_rank_sum = sum(rank for rank, (_, label) in zip(ranks, ordered) if label)
-    return (positive_rank_sum - positives * (positives + 1) / 2) / (positives * negatives)
 
 
 def risk_coverage_curve(scores: list, labels: list):
