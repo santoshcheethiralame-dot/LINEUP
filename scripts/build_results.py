@@ -23,8 +23,8 @@ OUT = ROOT / "paper" / "results_tables.md"
 
 DATASETS = ["hotpotqa", "2wiki"]
 CONDITIONS = ["baseline", "hardtraps"]
-MODELS = ["qwen", "phi", "qwen14"]
-MODEL_LABEL = {"qwen": "Qwen2.5-7B", "phi": "Phi-3.5-mini", "qwen14": "Qwen2.5-14B"}
+MODELS = ["qwen", "phi", "mistral"]
+MODEL_LABEL = {"qwen": "Qwen2.5-7B", "phi": "Phi-3.5-mini", "mistral": "Mistral-7B"}
 METHODS = ["contextcite", "single_chunk", "llm_judge", "lexical_similarity"]
 
 
@@ -127,10 +127,10 @@ def _table_agreement(cells):
     rows = [
         "## Table 3 — Cross-model agreement (per-passage role kappa, both-wrong cases)",
         "",
-        "| dataset | condition | qwen-vs-phi | qwen-vs-qwen14 | phi-vs-qwen14 |",
+        "| dataset | condition | qwen-vs-phi | qwen-vs-mistral | phi-vs-mistral |",
         "|---|---|--:|--:|--:|",
     ]
-    pairs = [("qwen", "phi"), ("qwen", "qwen14"), ("phi", "qwen14")]
+    pairs = [("qwen", "phi"), ("qwen", "mistral"), ("phi", "mistral")]
     for dataset in DATASETS:
         for condition in CONDITIONS:
             kappas = []
