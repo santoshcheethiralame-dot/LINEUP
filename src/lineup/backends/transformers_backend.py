@@ -57,11 +57,12 @@ class TransformersModel(LanguageModel):
                 bnb_4bit_use_double_quant=True,
                 bnb_4bit_compute_dtype=torch.float16,
             )
+            # Pin the 4-bit model to one GPU. A <=14B model in nf4 is ~8.5GB and fits a single
+            # 16GB card; splitting it across two with device_map="auto" makes the loader
+            # materialize shards in fp16 during dispatch and overflow a T4's memory.
             self.model = AutoModelForCausalLM.from_pretrained(
-                model_name, quantization_config=quantization, device_map="auto"
+                model_name, quantization_config=quantization, device_map={"": 0}
             )
-            # device_map dispatches layers across devices; route inputs to the embedding's
-            # device and let accelerate move activations through the rest of the model.
             self.device = self.model.get_input_embeddings().weight.device
         else:
             self.model = AutoModelForCausalLM.from_pretrained(
