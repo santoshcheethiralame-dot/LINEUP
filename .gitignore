@@ -24,6 +24,7 @@ htmlcov/
 /runs/
 /release/
 /paper/results_data/
+/paper/validation/
 .cache/
 
 # Local environment
