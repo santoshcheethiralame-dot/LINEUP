@@ -22,7 +22,7 @@ def main() -> None:
     print("human vs oracle (picked the same culprit):")
     for name, stat in result["per_reviewer"].items():
         value = f"{stat['agreement']:.2f}" if stat["agreement"] is not None else "n/a"
-        print(f"  {name:20s} {value}  (n={stat['n']})")
+        print(f"  {name:20s} {value}  (n={stat['n']}, unsure={stat['unsure']})")
     maj, inter, none = result["majority_vs_oracle"], result["inter_rater"], result["none_recall"]
     print(f"\nmajority vote vs oracle : {maj:.2f}  (n={result['majority_n']})" if maj is not None else "\nmajority: n/a")
     print(f"no-culprit agreement    : {none:.2f}  (n={result['none_n']})" if none is not None else "no-culprit: n/a")

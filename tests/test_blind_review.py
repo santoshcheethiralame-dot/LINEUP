@@ -46,3 +46,13 @@ def test_score_scenario_agreement_majority_none_and_inter_rater():
     assert result["majority_vs_oracle"] == 1.0
     assert result["none_recall"] == 1.0  # humans also say "none" on the no-culprit case
     assert abs(result["inter_rater"] - 4 / 6) < 1e-9
+
+
+def test_unsure_is_excluded_from_agreement():
+    _, key = sample_scenario_rows(_sources(), n=10, seed=0)
+    answer = {row["row_id"]: row["answer"] for row in key}
+    ids = list(answer)
+    # one real (correct) pick, one "unsure" -> agreement is 1.0 over the single scored row
+    sheet = [{"row_id": ids[0], "your_pick": answer[ids[0]]}, {"row_id": ids[1], "your_pick": "unsure"}]
+    result = score_scenario(key, {"A": sheet})
+    assert result["per_reviewer"]["A"] == {"n": 1, "agreement": 1.0, "unsure": 1}

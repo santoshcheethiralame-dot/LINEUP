@@ -74,17 +74,23 @@ KEY_FIELDS = ("row_id", "source", "qid", "answer", "n_chunks")
 
 def _normalize_pick(value: str) -> str:
     value = (value or "").strip().lower()
+    if value == "":
+        return ""
     if value in {"none", "n", "-"}:
         return "none"
+    if value in {"unsure", "skip", "?", "idk", "dunno", "dont know", "don't know"}:
+        return "unsure"
     return value.upper()
 
 
-def sample_scenario_rows(sources, *, n: int = 50, seed: int = 0):
+def sample_scenario_rows(sources, *, n: int = 50, seed: int = 0, prefer=None):
     """Pool wrong cases from several runs into a blank culprit-picking sheet + a hidden key.
 
     ``sources`` is a list of ``(label, scenarios, cases)``; cases are the wrong cases. Each row
-    shows all passages lettered in their stored (already randomized) order. Returns
-    ``(blank_rows, key_rows)``.
+    shows all passages lettered in their stored (already randomized) order. The pool is deduped
+    to one row per distinct question. If ``prefer`` is a list of keywords, cases whose text
+    mentions one are floated to the front, so the sample leans toward topics the annotators know.
+    Returns ``(blank_rows, key_rows)``.
     """
     pool = []
     for label, scenarios, cases in sources:
@@ -105,6 +111,18 @@ def sample_scenario_rows(sources, *, n: int = 50, seed: int = 0):
                 }
             )
     Random(seed).shuffle(pool)
+    seen, deduped = set(), []
+    for row in pool:  # one row per distinct question
+        if row["qid"] not in seen:
+            seen.add(row["qid"])
+            deduped.append(row)
+    pool = deduped
+    if prefer:
+        keywords = [word.lower() for word in prefer]
+        def familiar(row):
+            blob = (row["question"] + " " + " ".join(chunk.text for chunk in row["chunks"])).lower()
+            return any(word in blob for word in keywords)
+        pool.sort(key=lambda row: not familiar(row))  # stable: keeps the shuffled order within tiers
     pool = pool[:n]
 
     blank, key = [], []
@@ -151,10 +169,12 @@ def score_scenario(key_rows, sheets: dict) -> dict:
     oracle = {row["row_id"]: _normalize_pick(row["answer"]) for row in key_rows}
     per_reviewer, picks_by_row = {}, {}
     for name, rows in sheets.items():
-        filled = [(r["row_id"], _normalize_pick(r.get("your_pick", ""))) for r in rows if r.get("your_pick", "").strip()]
-        agree = sum(1 for row_id, pick in filled if oracle.get(row_id) == pick)
-        per_reviewer[name] = {"n": len(filled), "agreement": agree / len(filled) if filled else None}
-        for row_id, pick in filled:
+        normalized = [(r["row_id"], _normalize_pick(r.get("your_pick", ""))) for r in rows]
+        picks = [(row_id, pick) for row_id, pick in normalized if pick not in ("", "unsure")]
+        unsure = sum(1 for _, pick in normalized if pick == "unsure")
+        agree = sum(1 for row_id, pick in picks if oracle.get(row_id) == pick)
+        per_reviewer[name] = {"n": len(picks), "agreement": agree / len(picks) if picks else None, "unsure": unsure}
+        for row_id, pick in picks:
             picks_by_row.setdefault(row_id, []).append(pick)
 
     majority_agree = majority_n = 0
