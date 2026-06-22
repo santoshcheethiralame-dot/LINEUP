@@ -48,7 +48,7 @@ def assign_role(causal: bool, salient: bool) -> str:
 
 
 def leave_one_out(
-    model: LanguageModel, scenario: Scenario, original: GenerationResult, *, llm_judge=None
+    model: LanguageModel, scenario: Scenario, original: GenerationResult, *, llm_judge=None, score_logprobs: bool = True
 ) -> CaseRoles:
     """Assign every chunk its 2x2 role by exact leave-one-out.
 
@@ -56,13 +56,17 @@ def leave_one_out(
     the salience axis is whether the chunk holds that answer's value. Both are derived from
     the known gold answer and the model's own behavior, never from a method under test, so
     the labels are non-circular.
+
+    ``score_logprobs`` controls only the informational ``delta_logprob`` field; set it False for
+    generation-only backends (the API models), which cannot teacher-force a fixed answer. The role
+    assignment is unaffected — it depends on generation, not scoring.
     """
     chunks = scenario.chunks
     answer = original.model_answer
     gold = scenario.gold_answer
     intended_wrong = scenario.recipe.intended_wrong_answer
     full_messages = build_messages_for(scenario.question, chunks)
-    full_logprob = model.score(full_messages, answer).total_logprob if answer else 0.0
+    full_logprob = model.score(full_messages, answer).total_logprob if (answer and score_logprobs) else 0.0
     original_key = answer_key(answer, gold, intended_wrong)
 
     chunk_roles = []
@@ -74,7 +78,7 @@ def leave_one_out(
         causal = answer_key(answer_without, gold, intended_wrong) != original_key
         salient = is_salient(chunk, answer, gold, intended_wrong)
         now_correct, _ = judge_correct(scenario.question, gold, answer_without, llm_judge)
-        ablated_logprob = model.score(ablated_messages, answer).total_logprob if answer else 0.0
+        ablated_logprob = model.score(ablated_messages, answer).total_logprob if (answer and score_logprobs) else 0.0
 
         chunk_roles.append(
             ChunkRole(
