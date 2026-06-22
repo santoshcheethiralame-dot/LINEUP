@@ -34,7 +34,7 @@ class APIModel(LanguageModel):
         client=None,
         max_new_tokens: int = 64,
         temperature: float = 0.0,
-        max_retries: int = 6,
+        max_retries: int = 8,
         min_interval: float = 0.0,
     ):
         self.model = model
@@ -80,8 +80,8 @@ class APIModel(LanguageModel):
                 self._last_call = time.monotonic()
                 if attempt == self.max_retries - 1:
                     raise
-                time.sleep(delay)        # back off on rate limits / transient errors
-                delay = min(delay * 2, 30)
+                time.sleep(delay)        # back off on rate limits / transient queue errors
+                delay = min(delay * 2, 60)
         return ""
 
     def generate(self, messages: Sequence[Message], max_new_tokens: int | None = None) -> Generation:

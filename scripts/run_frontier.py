@@ -94,7 +94,10 @@ def main():
         if generation.is_correct:
             role_cases.append(CaseRoles(scenario.qid, scenario.question, scenario.gold_answer, generation.model_answer, True, []))
         else:
-            role_cases.append(leave_one_out(model, scenario, generation, llm_judge=judge, score_logprobs=False))
+            # No judge inside the oracle: roles come from causal (value change) + salient (text),
+            # not from now_correct, so skipping it halves the API load and avoids an unreliable
+            # 8-token reply from a reasoning model.
+            role_cases.append(leave_one_out(model, scenario, generation, llm_judge=None, score_logprobs=False))
         if (i + 1) % 5 == 0 or i + 1 == len(scenarios):
             write_roles(roles_path, role_cases)
         _progress("oracle", i, len(scenarios))
