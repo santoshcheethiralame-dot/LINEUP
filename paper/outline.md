@@ -1,91 +1,109 @@
-# lineup — paper outline
+# LINEUP — paper skeleton
 
-Working title: **Which chunk lied? Organic chunk-role attribution in retrieval-augmented generation.**
+> Write the prose yourself from these bullets. Every results bullet points at a number in
+> `claim_evidence.md` / a figure in `figures/`. Do not state anything not backed there.
 
-Target venues: an ACL/EMNLP Findings short paper, a RAG or trustworthy-NLP workshop, or the NeurIPS Datasets and Benchmarks track. The dataset-and-benchmark framing fits the last best; the negative result fits a workshop.
+Working titles (pick one):
+- **No Single Culprit: The Limits of Chunk Attribution for Organic RAG Errors**
+- When Attribution Has No Answer: Ill-Posed Chunk Attribution in RAG
+- Who's to Blame? Auditing Which Passage Caused a Wrong RAG Answer
 
-The paper rests on three pillars, and every section serves one of them:
+Target venues: a **RAG / trustworthy-NLP workshop** (primary; the *Insights from Negative
+Results* workshop fits the reframe), with an **ACL/EMNLP Findings** or **NeurIPS D&B** stretch.
 
-1. **The framing** — chunk roles as a 2×2 of counterfactual effect against apparent salience, with the *misleading* passage as the case existing tools conflate.
-2. **The negative result** — salience-based attribution blames the misleading passage, and a controlled benchmark makes that measurable rather than anecdotal.
-3. **The downstream cost** — failing to localise the culprit has a price, shown through selective answering.
+## The arc (one sentence)
+Effect-based attribution finds the culprit well *when there is one* — but a third of organic
+errors have **no single culprit**, attribution can't tell when it's in that regime, and the fix is
+to **abstain / go set-valued**. Holds across 3 model families × 2 datasets.
 
-## Abstract (draft)
+## Contributions (the real ones)
+1. **LINEUP** — a controlled benchmark assigning every retrieved passage a ground-truth causal
+   role (culprit / misleading / silent / inert) via a non-circular leave-one-out oracle, with
+   organic near-misses and optional redundant decoys. (resource)
+2. **Attribution works when well-posed** — effect-based methods localize the culprit at 0.70–0.92,
+   far above lexical overlap. (calibrates expectations)
+3. **~A third of organic errors have no single culprit** (27–53%) — single-chunk attribution is
+   structurally ill-posed there; robust across families/datasets/conditions. (the spine)
+4. **Silent failure + a remedy** — method confidence doesn't flag wrong attributions; a calibrated
+   signal + abstention + set-valued fallback recovers trustworthiness. (the constructive turn)
+5. **The culprit is model-specific** — which passage is to blame barely transfers across families
+   (κ 0.13–0.47). (evaluate per model)
 
-Retrieval-augmented generation fails most dangerously when it is confidently wrong, and such failures usually trace to a single retrieved passage. Existing tools report *that* an answer is unfaithful or *how much* each passage contributed, but they are easiest to fool when the offending passage is not adversarial — merely stale, near-duplicate, or topically adjacent. We introduce a controlled benchmark whose chunk roles are known by construction: each case pairs gold supporting passages and realistic distractors with one constructed organic near-miss, and an exact leave-one-out oracle labels every passage as culprit, misleading, silent, or inert. On this benchmark, contributive and lexical attribution methods identify the true culprit far less often than their salience suggests, blaming the misleading passage at a high rate; and a selective-answering study shows that this localisation failure forfeits an abstention signal an oracle would capture. We release the benchmark, the construction harness, and the evaluation code.
+---
 
-## 1. Introduction
+## Abstract (convey, in ~6 sentences — do not copy these as prose)
+- RAG fails most dangerously when confidently wrong, and the failure usually traces to a passage.
+- Prior tools say *whether* unfaithful or *how much* each passage contributed — not *which* is to blame, for *organic* (stale/near-duplicate) errors.
+- We build LINEUP: known-by-construction roles + a non-circular leave-one-out oracle.
+- Finding 1: effect-based attribution finds the culprit well *when one exists*.
+- Finding 2 (headline): ~a third of errors have **no single culprit**, and methods can't tell — they answer confidently anyway.
+- Remedy + scope: a calibrated abstention / set-valued method recovers trust; holds across 3 families × 2 datasets; dataset + code released.
 
-- The confident-wrong-answer problem in RAG; the cost of not knowing *which* passage caused it.
-- The gap: faithfulness detection answers *whether*, contributive attribution answers *how much* (and conflates salience with cause), poison-traceback assumes an injected signature that organic errors lack.
-- The organic setting: stale / near-duplicate / topically-adjacent passages, not adversarial injection.
-- Contributions: (i) the 2×2 role framing; (ii) a benchmark with non-circular ground truth; (iii) the measured failure of salience-based attribution; (iv) the downstream selective-answering result; (v) the released dataset and harness.
+## 1. Introduction (bullets to expand)
+- The confident-wrong-answer problem; the cost of not knowing *which* passage caused it.
+- Gap: faithfulness = *whether*; contributive attribution = *how much* (and is read as *which*); poison-traceback assumes an injected signature organic errors lack.
+- The organic setting (stale / near-duplicate / topically-adjacent), not adversarial injection.
+- The twist: the problem isn't that methods are bad — it's that the question is often **ill-posed**, and nobody measures that.
+- Contributions list (above).
 
-## 2. Related work
-
-- **Faithfulness / hallucination detection** (RAGAS, self-check) — flags unfaithfulness, not the responsible passage.
-- **Contributive attribution** (ContextCite, SelfCite, TokenShapley) — estimates contribution but conflates a salient near-duplicate with the cause.
-- **Poison traceback** (RAGOrigin, RAGCharacter) — recovers injected text by its signature; organic errors leave none.
-- **Noise in RAG** (The Power of Noise, Lost in the Middle, Distracted by Irrelevant Context) — establishes that semantically related but wrong passages are the harmful ones; motivates the near-miss construction.
-- The gap each leaves: none provides ground-truth roles for organic errors to evaluate against.
+## 2. Related work (4 buckets + the gap)
+- Faithfulness / hallucination detection (RAGAS, self-check) — *whether*, not *which*.
+- Contributive attribution (ContextCite, SelfCite, TokenShapley) — *how much*; read as cause.
+- Poison traceback (RAGOrigin, RAGCharacter) — injected-signature; organic errors leave none.
+- Noise in RAG (Power of Noise, Lost in the Middle) — related-but-wrong passages are harmful.
+- Gap: none gives ground-truth roles for organic errors, and none asks whether a single culprit *exists*.
 
 ## 3. The benchmark
-
-- **Roles.** The 2×2 of counterfactual effect (causal) against apparent salience, giving culprit, misleading, silent, inert.
-- **Construction.** Multi-hop questions with annotated gold support (HotpotQA); a retriever for realistic distractors; the organic near-miss built by typed value substitution — clone the gold paragraph, replace the answer with a plausible same-type wrong value (year, number, entity); randomise order; record a reproducible recipe.
-- **The oracle.** Exact leave-one-out: remove each passage, regenerate, read the correctness flip and the answer's value shift for the causal axis, and a verbosity-robust salience measure for the other. Cross them to place each passage in the 2×2.
-- **Non-circularity.** Labels use only the known gold answer and the model's own behaviour, never a method under test — the property the benchmark's validity rests on.
+- **Roles**: 2×2 of counterfactual effect × apparent salience → culprit / misleading / silent / inert.
+- **Construction**: multi-hop QA (HotpotQA, 2Wiki) + gold support + retrieved distractors + an
+  organic near-miss by typed value substitution; optional **redundant decoy** (hard-traps);
+  randomized order; reproducible recipe.
+- **Oracle**: exact leave-one-out — causal = answer value changes on removal; salient = passage
+  holds the value; cross → role. **Non-circular** (uses only gold answer + model behavior).
 
 ## 4. Methods under test
+- ContextCite (ablations → Lasso surrogate); SingleChunkSupport (answer logprob per chunk);
+  LexicalSimilarity (pure salience); LLM-judge. Exact LOO excluded (it is the oracle).
 
-- **ContextCite** — random ablations, logit-transformed response probability, Lasso surrogate; the contributive baseline.
-- **Lexical similarity** — pure salience; the baseline that should blame the near-miss.
-- **Single-chunk support** — a model-based salience baseline: the answer's log-probability under each passage alone.
-- **LLM-judge culprit** — the model names the passage it thinks caused the error.
-- Deliberately excluded: exact leave-one-out as a *method* (it is the oracle — circular).
+## 5. Attribution finds the culprit — when one exists  → Table 1, Fig 3
+- ContextCite/SingleChunk top-1 **0.70–0.92**, lexical **0.22–0.57**, judge middling. All 12 cells.
+- Takeaway: methods are not broken; this makes the failures below credible.
 
-## 5. Results — the negative result (Pillar 2)
+## 6. A third of errors have no single culprit (the spine)  → Fig 1, results_ci.md
+- no-culprit **27–53%** (Mistral most ill-posed); present in **baseline** too → not a decoy artifact.
+- Define ill-posedness; redundancy is one controllable source (hard-traps), hallucination another.
 
-- Headline **misleading-as-culprit rate** per method.
-- **Culprit-over-misleading win-rate** — the within-case pairwise comparison on the crux; near 0.5 means a coin flip on the hard case.
-- **Top-1 culprit accuracy** over cases that have a culprit, and the full 2×2 confusion of predicted versus true role.
-- Read against the salience baseline: contribution methods track salience, not cause.
+## 7. Attribution can't tell when it's wrong  → Table 2
+- Reliability AUROC **0.58–0.92**; single-culprit AUROC **0.48–0.75** (near chance in places).
+- "Never high enough to gate on" — the silent-failure framing.
 
-## 6. Results — does it matter (Pillar 3)
+## 8. A remedy: selective + set-valued attribution  → Fig 5, Fig 2
+- Naive top-1 correct on only **0.35** of all errors.
+- Calibrated signal (margin) AUROC **0.77 [0.73,0.80]**; abstain→50% cov ⇒ **0.54 [0.49,0.58]** (+0.19); 30% ⇒ 0.64.
+- On abstained cases, effect-set recall **0.31 → 0.53**; recall@1→@k **0.26–0.37 → 0.57–0.75** (Fig 2).
+- Recommendation: set-valued attribution + redundancy-aware abstention.
 
-- Selective answering / abstention: can a signal tell correct answers from wrong ones?
-- Signals compared: model self-confidence, each method's attribution decisiveness (top1−top2 margin), and the oracle's fixable-error flag as an upper bound.
-- Metric: AUROC, plus risk–coverage. The gap between the oracle and the deployable signals is the cost of the localisation failure.
+## 9. The culprit is model-specific  → Fig 4, Table 3
+- Per-passage role κ **0.13–0.47** across family pairs; 2Wiki baseline near chance. Evaluate per model.
 
-## 7. Limitations
+## 10. Human validation  → (from score_validation.py)
+- 3 reviewers, 50 blind cases, pick the culprit. Report human↔oracle, majority, no-culprit, inter-rater. [NUMBERS PENDING]
 
-- Labels reflect one model's behaviour at one precision; a different model may be fooled differently.
-- Organic wrong answers are a minority, so the labelled set is smaller than the case set.
-- Substitution covers years, numbers, and named entities; English only; one question family.
+## 11. Limitations
+- 7B-class open models (frontier = future work); 2 Wikipedia-based datasets; ~70–220 wrong/cell;
+  ContextCite ablation-count sensitivity; human sample weighted to familiar topics (disclosed).
 
-## 8. Conclusion
+## 12. Conclusion
+- A controlled benchmark turns "which passage?" into a measurable question — and shows the honest
+  answer is often "no single one," which attribution must learn to say.
 
-- A controlled benchmark turns "attribution conflates salience with cause" from intuition into measurement, and shows the failure carries a downstream cost.
+## Qualitative examples → examples.md (pick one clean culprit / coalition / trap)
 
-## Claim → evidence map
+---
 
-| Claim | Evidence | Produced by |
-| ----- | -------- | ----------- |
-| Roles are well defined and assignable | the 2×2, role distribution per construction | `oracle.py`, `docs/stage4.md` |
-| Labels are non-circular | construction + oracle use only gold answer and model behaviour | `docs/stage4.md` |
-| Salience methods blame the near-miss | misleading-as-culprit rate, culprit-over-misleading win-rate | `scripts/run_scoring.py` |
-| The failure is on the crux, not noise | 2×2 confusion, top-1 over cases-with-a-culprit | `scoring.py` |
-| The failure has a downstream cost | AUROC / risk–coverage, oracle vs deployable signals | `scripts/run_abstention.py` |
-| The rates are not sampling noise | 95% bootstrap confidence intervals | `scoring.bootstrap_intervals` |
-| The result is not one model's quirk | cross-model culprit agreement, role kappa | `scripts/run_agreement.py` |
-| The failure concentrates by type and position | per-slice scores | `scripts/run_breakdowns.py` |
-| Coalition effects bound single-chunk attribution | synergy-pair rate | `scripts/run_interactions.py` |
-| The oracle labels match human judgement | human/oracle agreement | `scripts/make_review_sheet.py` |
-| The benchmark reproduces | deterministic construction, manifest | `scripts/build_release.py`, `tests/test_release.py` |
-
-## Before submission
-
-- Scale the run well beyond the demo sizes, so the per-method rates are tight.
-- Add a second model (for example a Llama-3.1-8B-Instruct) so the labels are not tied to one model's quirks; report agreement with `scripts/run_agreement.py`.
-- Add a cross-dataset check on a second multi-hop source (2WikiMultiHopQA) — the loader is wired; run with `--dataset 2wiki`.
-- Finalise the figures: the 2×2 confusion and the risk–coverage curve.
+## Before submission (checklist)
+- [ ] Fold in human-validation numbers (§10).
+- [ ] Release the dataset to HF (`build_release.py`) and cite it.
+- [ ] Final figure captions; ensure every number in text matches `claim_evidence.md`.
+- [ ] Mentor red-team review of the full draft by end of week 1.
+- [ ] arXiv + workshop submission.
