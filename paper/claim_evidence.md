@@ -24,6 +24,9 @@ Artifacts: `results_tables.md` (Tables 1–3), `results_ci.md` (no-culprit CIs),
 - **Numbers:** no-culprit **27–53%** (Mistral most ill-posed, 46–53%). Present in **baseline**
   too (28–53%), so it is inherent to organic error, **not** a hard-traps artifact. CIs sit well
   above zero.
+- **Frontier check (gpt-oss-120B via Cerebras, 136 cases):** 38% error rate; **44% no single
+  culprit** (23/52), 95% CI [31–58%] — in the open-model band, so the ill-posedness holds at
+  120B scale, not just 7B. (Generation-only oracle; no logprob methods on the closed API.)
 
 ## Pillar C — FLAGSHIP / constructive: single-chunk attribution is the wrong primitive
 - **Claim:** under redundant evidence a single pick structurally cannot cover the culprit set;
