@@ -28,6 +28,7 @@ htmlcov/
 /paper/dose_data/
 /paper/natural_data/
 /paper/frontier_data/
+/notes/
 .cache/
 
 # Local environment
