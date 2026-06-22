@@ -4,6 +4,7 @@ Pools the wrong cases across every run cell, picks the best confidence signal on
 and reports on a held-out test split: how much abstaining raises the accuracy of the answers the
 method *does* give, and how well the effect-set covers the culprits on the cases it abstains on.
 """
+import random
 from pathlib import Path
 
 import matplotlib
@@ -38,6 +39,24 @@ def load_all():
     return pooled
 
 
+def _percentile_ci(values):
+    values = sorted(values)
+    return values[int(0.025 * len(values))], values[int(0.975 * len(values))]
+
+
+def bootstrap(test, signal, n_boot=1000, seed=0):
+    rng = random.Random(seed)
+    n = len(test)
+    aurocs, accs = [], []
+    for _ in range(n_boot):
+        sample = [test[rng.randrange(n)] for _ in range(n)]
+        value = signal_auroc(sample, signal)
+        if value is not None:
+            aurocs.append(value)
+        accs.append(risk_coverage(sample, signal, (0.5,))[0.5])
+    return _percentile_ci(aurocs), _percentile_ci(accs)
+
+
 def main():
     pooled = load_all()
     train, test = split(pooled)
@@ -46,15 +65,16 @@ def main():
     curve = risk_coverage(test, signal, COVERAGES)
     base = curve[1.0]
     rec1_half, reck_half = set_recall_on_abstained(test, signal, 0.5)
+    (auroc_lo, auroc_hi), (acc_lo, acc_hi) = bootstrap(test, signal)
 
     print(f"pooled wrong cases: {len(pooled)}  (train {len(train)} / test {len(test)})")
     print(f"chosen confidence signal (max train AUROC): {signal}")
-    print(f"test AUROC (signal vs top-1 is correct):    {auroc_test:.2f}")
+    print(f"test AUROC (signal vs top-1 is correct):    {auroc_test:.2f}  [{auroc_lo:.2f}, {auroc_hi:.2f}]")
     print("\nselective accuracy of the answers it gives, by coverage (test):")
     for coverage in COVERAGES:
         print(f"  coverage {int(coverage * 100):3d}%  ->  accuracy {curve[coverage]:.2f}")
     print(f"\nbase (always answer) accuracy : {base:.2f}")
-    print(f"accuracy at 50% coverage      : {curve[0.5]:.2f}   (+{curve[0.5] - base:.2f})")
+    print(f"accuracy at 50% coverage      : {curve[0.5]:.2f}  [{acc_lo:.2f}, {acc_hi:.2f}]   (+{curve[0.5] - base:.2f})")
     print(f"on the abstained half, effect-set recall: single pick {rec1_half:.2f} -> set {reck_half:.2f}")
 
     coverages = list(COVERAGES)

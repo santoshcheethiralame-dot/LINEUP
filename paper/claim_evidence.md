@@ -5,7 +5,7 @@ prose from this; do not state anything that is not on this page. Numbers are the
 ranges (12 cells = 3 model families × 2 datasets × {baseline, hard-traps}).
 
 Artifacts: `results_tables.md` (Tables 1–3), `results_ci.md` (no-culprit CIs),
-`figures/fig1..fig4.png`.
+`figures/fig1..fig5.png`, `examples.md` (qualitative candidate cases — pick one per archetype).
 
 ## C1 — Resource: the LINEUP benchmark
 - **Claim:** a controlled organic-error benchmark that assigns every retrieved passage a causal
@@ -31,12 +31,28 @@ Artifacts: `results_tables.md` (Tables 1–3), `results_ci.md` (no-culprit CIs),
 - **Evidence:** **Fig 2**; Table 2 (recall@1 vs recall@k).
 - **Numbers:** all **6** hard-traps cells: recall@1 **0.26–0.37** → recall@k **0.57–0.75** (~2×).
 
+## C2 — REMEDY: calibrated selective attribution (the method we build)
+- **Claim:** a calibrated confidence signal lets attribution **abstain** when no single culprit is
+  evident — raising the accuracy of the answers it does give — and falls back to an effect-set on
+  the cases it abstains on. Diagnosis → working fix.
+- **Evidence:** **Fig 5** (risk-coverage); `run_selective.py` (pooled, held-out test split).
+- **Numbers:** 1,766 wrong cases (test 906). Naive top-1 is correct on only **0.35** of all errors.
+  Best signal (top1−top2 margin) reaches **AUROC 0.77 [0.73, 0.80]** for "is this pick right".
+  Abstaining to 50% coverage → accuracy **0.54 [0.49, 0.58]** (+0.19); to 30% → **0.64**. On the
+  abstained half, effect-set recall **0.31 → 0.53**.
+
+## Qualitative (Fig/Table in the appendix or main)
+- **Evidence:** `examples.md` — a clean culprit (ContextCite succeeds), a coalition (no single
+  culprit), and a salience trap (method blames a salient non-causal passage). Pick one of each.
+
 ## Pillar D — Attribution fails silently (no usable abstention)
 - **Claim:** method confidence does not reliably flag wrong attributions, is never high enough to
   gate on, and degrades exactly when evidence is redundant.
 - **Evidence:** Table 2 (reliability AUROC, single-culprit AUROC).
 - **Numbers:** reliability AUROC **0.58–0.92** (baseline higher, hard-traps lower); single-culprit
   AUROC **0.48–0.75** (near chance in several cells). Frame as "never high enough to gate on."
+- **But (links to C2):** a *calibrated, pooled* confidence signal reaches AUROC **0.77** for
+  self-correctness — so the remedy is calibration + abstention, not raw method confidence.
 
 ## Pillar E — Errors are model-specific
 - **Claim:** which passage is to blame barely transfers across model families.
