@@ -20,6 +20,7 @@ class ScenarioBuilder:
         misleading_builder: MisleadingChunkBuilder | None = None,
         hard_traps: bool = False,
         n_decoys: int | None = None,
+        natural: bool = False,
     ):
         self.answer_pool = answer_pool
         self.k = k
@@ -27,6 +28,8 @@ class ScenarioBuilder:
         self.misleading_builder = misleading_builder or ValueSubstitutionBuilder()
         # n_decoys is the coalition-size knob; hard_traps is the boolean shorthand for n_decoys=1.
         self.n_decoys = n_decoys if n_decoys is not None else (1 if hard_traps else 0)
+        # natural mode plants nothing: gold + the dataset's own distractors, for organic errors.
+        self.natural = natural
 
     def _rng(self, qid: str, salt: str) -> random.Random:
         # A stable per-question seed: the built-in hash() is salted per process and would
@@ -43,6 +46,37 @@ class ScenarioBuilder:
         gold = list(example.gold_chunks)
         distractor_pool = list(example.distractor_pool)
         order_rng.shuffle(distractor_pool)
+
+        if self.natural:
+            # No planting: the context is the gold chunks plus the dataset's own distractors.
+            # Same questions as the constructed runs (substitution_check already passed), so the
+            # two are directly comparable; errors here are organic, not induced.
+            distractors = distractor_pool[: max(0, self.k - len(gold))]
+            chunks = gold + distractors
+            order_rng.shuffle(chunks)
+            recipe = Recipe(
+                seed=self.seed,
+                k=len(chunks),
+                original_value=example.answer,
+                intended_wrong_answer="",
+                substitution_type="natural",
+                source_gold_chunk_id="",
+                source_sentence_id=-1,
+                gold_chunk_ids=[chunk.chunk_id for chunk in gold],
+                misleading_chunk_id="",
+                distractor_chunk_ids=[chunk.chunk_id for chunk in distractors],
+                decoy_chunk_id="",
+                order=[chunk.chunk_id for chunk in chunks],
+            )
+            return Scenario(
+                qid=example.qid,
+                question=example.question,
+                gold_answer=example.answer,
+                chunks=chunks,
+                recipe=recipe,
+                meta=dict(example.meta),
+            )
+
         # k is a floor on context size: the gold chunks and the near-miss are always kept,
         # so the count is max(k, len(gold) + 1).
         n_distractors = max(0, self.k - len(gold) - 1 - self.n_decoys)

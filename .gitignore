@@ -26,6 +26,7 @@ htmlcov/
 /paper/results_data/
 /paper/validation/
 /paper/dose_data/
+/paper/natural_data/
 .cache/
 
 # Local environment
