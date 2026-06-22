@@ -69,7 +69,13 @@ class APIModel(LanguageModel):
                     max_tokens=max_new_tokens or self.max_new_tokens,
                 )
                 self._last_call = time.monotonic()
-                return response.choices[0].message.content or ""
+                message = response.choices[0].message
+                text = (message.content or "").strip()
+                if "</think>" in text:        # some reasoning models inline their thinking
+                    text = text.split("</think>")[-1].strip()
+                if not text:                  # others leave content empty and put it in a side field
+                    text = (getattr(message, "reasoning", None) or getattr(message, "reasoning_content", None) or "").strip()
+                return text
             except Exception:
                 self._last_call = time.monotonic()
                 if attempt == self.max_retries - 1:

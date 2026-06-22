@@ -49,10 +49,11 @@ def main():
     parser.add_argument("--limit", type=int, default=150)
     parser.add_argument("--seed", type=int, default=0)
     parser.add_argument("--min-interval", type=float, default=0.0, help="seconds between calls (use ~4 for Gemini free tier's 15 req/min)")
+    parser.add_argument("--max-tokens", type=int, default=512, help="output budget; reasoning models need room to think before answering")
     parser.add_argument("--smoke", action="store_true", help="one generation to verify the key/endpoint")
     args = parser.parse_args()
 
-    model = APIModel(args.model, base_url=PROVIDERS[args.provider], max_new_tokens=32, min_interval=args.min_interval)
+    model = APIModel(args.model, base_url=PROVIDERS[args.provider], max_new_tokens=args.max_tokens, min_interval=args.min_interval)
     if args.smoke:
         print("smoke reply:", model.generate([Message("user", "Reply with the single word: ok")]).text)
         return
