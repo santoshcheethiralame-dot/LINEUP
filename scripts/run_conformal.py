@@ -78,7 +78,7 @@ def main():
     ax.axhline(0.9, ls="--", color="grey", lw=1)
     ax.set_xlabel("average set size")
     ax.set_ylabel("culprit coverage")
-    ax.set_title("Conformal attribution sets buy a coverage guarantee a single pick can't")
+    ax.set_title("Conformal sets cover the culprit with a guarantee")
     ax.set_ylim(0, 1)
     ax.legend(frameon=False)
     fig.tight_layout()
