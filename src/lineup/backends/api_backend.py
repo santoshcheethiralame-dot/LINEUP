@@ -34,11 +34,14 @@ class APIModel(LanguageModel):
         max_new_tokens: int = 64,
         temperature: float = 0.0,
         max_retries: int = 6,
+        min_interval: float = 0.0,
     ):
         self.model = model
         self.max_new_tokens = max_new_tokens
         self.temperature = temperature
         self.max_retries = max_retries
+        self.min_interval = min_interval   # seconds between calls, to stay under a per-minute cap
+        self._last_call = 0.0
         if client is not None:
             self.client = client
             return
@@ -53,6 +56,10 @@ class APIModel(LanguageModel):
         payload = [{"role": m.role, "content": m.content} for m in messages]
         delay = 2.0
         for attempt in range(self.max_retries):
+            if self.min_interval:        # proactively stay under a per-minute request cap
+                wait = self.min_interval - (time.monotonic() - self._last_call)
+                if wait > 0:
+                    time.sleep(wait)
             try:
                 response = self.client.chat.completions.create(
                     model=self.model,
@@ -60,8 +67,10 @@ class APIModel(LanguageModel):
                     temperature=self.temperature,
                     max_tokens=max_new_tokens or self.max_new_tokens,
                 )
+                self._last_call = time.monotonic()
                 return response.choices[0].message.content or ""
             except Exception:
+                self._last_call = time.monotonic()
                 if attempt == self.max_retries - 1:
                     raise
                 time.sleep(delay)        # back off on rate limits / transient errors

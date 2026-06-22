@@ -16,7 +16,15 @@ from lineup.config import set_seed
 from lineup.correctness import LLMJudge
 from lineup.data.scenario import ScenarioBuilder
 from lineup.data.schema import CaseRoles
-from lineup.data.serialization import write_generations, write_predictions, write_roles, write_scenarios
+from lineup.data.serialization import (
+    read_generations,
+    read_predictions,
+    read_roles,
+    write_generations,
+    write_predictions,
+    write_roles,
+    write_scenarios,
+)
 from lineup.data.sources import load_examples
 from lineup.data.substitution import build_answer_pool
 from lineup.generation import generate_and_judge
@@ -40,10 +48,11 @@ def main():
     parser.add_argument("--split", default="validation")
     parser.add_argument("--limit", type=int, default=150)
     parser.add_argument("--seed", type=int, default=0)
+    parser.add_argument("--min-interval", type=float, default=0.0, help="seconds between calls (use ~4 for Gemini free tier's 15 req/min)")
     parser.add_argument("--smoke", action="store_true", help="one generation to verify the key/endpoint")
     args = parser.parse_args()
 
-    model = APIModel(args.model, base_url=PROVIDERS[args.provider], max_new_tokens=32)
+    model = APIModel(args.model, base_url=PROVIDERS[args.provider], max_new_tokens=32, min_interval=args.min_interval)
     if args.smoke:
         print("smoke reply:", model.generate([Message("user", "Reply with the single word: ok")]).text)
         return
@@ -60,34 +69,53 @@ def main():
     out.mkdir(parents=True, exist_ok=True)
     write_scenarios(out / "scenarios.jsonl", scenarios)
 
-    generations = []
-    for i, scenario in enumerate(scenarios):
-        generations.append(generate_and_judge(model, scenario, llm_judge=judge))
+    # Every phase resumes from its checkpoint (scenario order is deterministic by seed), so a
+    # rate-limit cap mid-run never loses work — just re-run the same command and it continues.
+    gen_path = out / "generations.jsonl"
+    generations = list(read_generations(gen_path)) if gen_path.exists() else []
+    if generations:
+        print(f"  resuming: {len(generations)}/{len(scenarios)} generations already done")
+    for i in range(len(generations), len(scenarios)):
+        generations.append(generate_and_judge(model, scenarios[i], llm_judge=judge))
+        if (i + 1) % 10 == 0 or i + 1 == len(scenarios):
+            write_generations(gen_path, generations)
         _progress("generate", i, len(scenarios))
-    write_generations(out / "generations.jsonl", generations)
+    write_generations(gen_path, generations)
     n_wrong = sum(not g.is_correct for g in generations)
     print(f"{n_wrong} wrong of {len(scenarios)}")
 
-    role_cases = []
-    for i, (scenario, generation) in enumerate(zip(scenarios, generations)):
+    roles_path = out / "roles.jsonl"
+    role_cases = list(read_roles(roles_path)) if roles_path.exists() else []
+    if role_cases:
+        print(f"  resuming: {len(role_cases)}/{len(scenarios)} oracle cases already done")
+    for i in range(len(role_cases), len(scenarios)):
+        scenario, generation = scenarios[i], generations[i]
         if generation.is_correct:
             role_cases.append(CaseRoles(scenario.qid, scenario.question, scenario.gold_answer, generation.model_answer, True, []))
         else:
             role_cases.append(leave_one_out(model, scenario, generation, llm_judge=judge, score_logprobs=False))
+        if (i + 1) % 5 == 0 or i + 1 == len(scenarios):
+            write_roles(roles_path, role_cases)
         _progress("oracle", i, len(scenarios))
-    write_roles(out / "roles.jsonl", role_cases)
+    write_roles(roles_path, role_cases)
 
     methods = [LexicalSimilarity(), LLMJudgeCulprit()]
-    wrong_cases = [(s, g) for s, g in zip(scenarios, generations) if not g.is_correct]
-    predictions = []
-    for i, (scenario, generation) in enumerate(wrong_cases):
+    preds_path = out / "predictions.jsonl"
+    predictions = list(read_predictions(preds_path)) if preds_path.exists() else []
+    done_qids = {p.qid for p in predictions}
+    remaining = [(s, g) for s, g in zip(scenarios, generations) if not g.is_correct and s.qid not in done_qids]
+    if predictions:
+        print(f"  resuming: {len(done_qids)} method cases already done")
+    for i, (scenario, generation) in enumerate(remaining):
         for method in methods:
             try:
                 predictions.append(run_method(method, model, scenario, generation.model_answer))
             except NotImplementedError:
                 pass        # a method that needs logprobs cannot run on an API model
-        _progress("methods", i, len(wrong_cases))
-    write_predictions(out / "predictions.jsonl", predictions)
+        if (i + 1) % 10 == 0 or i + 1 == len(remaining):
+            write_predictions(preds_path, predictions)
+        _progress("methods", i, len(remaining))
+    write_predictions(preds_path, predictions)
 
     wrong = [c for c in role_cases if not c.original_correct]
     no_culprit = sum(1 for c in wrong if not any(r.role == "culprit" for r in c.chunk_roles))
