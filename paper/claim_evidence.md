@@ -41,6 +41,14 @@ Artifacts: `results_tables.md` (Tables 1–3), `results_ci.md` (no-culprit CIs),
   Abstaining to 50% coverage → accuracy **0.54 [0.49, 0.58]** (+0.19); to 30% → **0.64**. On the
   abstained half, effect-set recall **0.31 → 0.53**.
 
+## C3 — RIGOR: conformal attribution sets (a coverage guarantee)
+- **Claim:** a split-conformal set provably contains the culprit with probability ≥ 1−α, and the
+  set size required grows under redundancy — ill-posedness made principled.
+- **Evidence:** **Fig 6**; `run_conformal.py` (held-out calibration/test split).
+- **Numbers:** 801 well-posed cases (test 390). At α=0.1, calibrated size **τ=2 → test coverage
+  0.94** vs a single pick's **0.82**. Per condition: baseline **τ=2** (0.94), hard-traps **τ=3**
+  (0.96) — redundancy demands a larger set for the same guarantee.
+
 ## Qualitative (Fig/Table in the appendix or main)
 - **Evidence:** `examples.md` — a clean culprit (ContextCite succeeds), a coalition (no single
   culprit), and a salience trap (method blames a salient non-causal passage). Pick one of each.

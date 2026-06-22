@@ -81,6 +81,8 @@ to **abstain / go set-valued**. Holds across 3 model families × 2 datasets.
 - Naive top-1 correct on only **0.35** of all errors.
 - Calibrated signal (margin) AUROC **0.77 [0.73,0.80]**; abstain→50% cov ⇒ **0.54 [0.49,0.58]** (+0.19); 30% ⇒ 0.64.
 - On abstained cases, effect-set recall **0.31 → 0.53**; recall@1→@k **0.26–0.37 → 0.57–0.75** (Fig 2).
+- **Conformal sets (Fig 6):** provable ≥90% culprit coverage at size τ=2 (test 0.94) vs top-1's 0.82;
+  redundancy pushes the required size to τ=3 — a principled, guaranteed set-valued method.
 - Recommendation: set-valued attribution + redundancy-aware abstention.
 
 ## 9. The culprit is model-specific  → Fig 4, Table 3
