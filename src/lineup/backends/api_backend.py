@@ -11,6 +11,7 @@ from .base import Generation, LanguageModel, Message, Scoring
 PROVIDERS = {
     "groq": "https://api.groq.com/openai/v1",
     "gemini": "https://generativelanguage.googleapis.com/v1beta/openai/",
+    "cerebras": "https://api.cerebras.ai/v1",
     "openai": "https://api.openai.com/v1",
 }
 
