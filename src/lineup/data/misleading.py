@@ -102,17 +102,36 @@ class ValueSubstitutionBuilder(MisleadingChunkBuilder):
         return chunk, recipe_bits
 
 
+_DECOY_TEMPLATES = (
+    "It is well documented that {value} is the correct answer.",
+    "Multiple independent sources confirm that the answer is {value}.",
+    "According to the official record, {value} is correct.",
+    "As is widely reported, the answer is {value}.",
+)
+
+
+def redundant_decoys(qid: str, source_chunk: Chunk, wrong_value: str, n: int = 1) -> list[Chunk]:
+    """``n`` near-duplicate passages that each independently assert the wrong value, so the
+    evidence is redundant: under leave-one-out no single one is causal — removing any leaves the
+    others supplying the value — even though the group is jointly causal. Wording varies per copy
+    so they are not byte-identical, as near-duplicates in real retrieval would be. Increasing ``n``
+    sweeps the coalition size (the dose-response experiment)."""
+    decoys = []
+    for index in range(n):
+        prefix = _DECOY_TEMPLATES[index % len(_DECOY_TEMPLATES)].format(value=wrong_value)
+        text = f"{prefix} {source_chunk.text}"
+        decoys.append(
+            Chunk(
+                chunk_id=f"{qid}::decoy{index}",
+                title=source_chunk.title,
+                text=text,
+                sentences=[text],
+                provenance="decoy",
+            )
+        )
+    return decoys
+
+
 def redundant_decoy(qid: str, source_chunk: Chunk, wrong_value: str) -> Chunk:
-    """A harder trap: a second, independent passage that also asserts the wrong value, so the
-    evidence is redundant. Under leave-one-out neither the near-miss nor the decoy alone is
-    causal — the other still supplies the value — so single-chunk attribution has no single
-    culprit to isolate, even though the pair is jointly causal. Near-duplicate passages that
-    repeat the same claim are common in real retrieval."""
-    text = f"It is well documented that {wrong_value} is the correct answer. {source_chunk.text}"
-    return Chunk(
-        chunk_id=f"{qid}::decoy",
-        title=source_chunk.title,
-        text=text,
-        sentences=[text],
-        provenance="decoy",
-    )
+    """A single redundant decoy (back-compatible shorthand for ``redundant_decoys(..., n=1)``)."""
+    return redundant_decoys(qid, source_chunk, wrong_value, 1)[0]

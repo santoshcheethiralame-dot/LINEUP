@@ -3,7 +3,7 @@ from __future__ import annotations
 import hashlib
 import random
 
-from .misleading import MisleadingChunkBuilder, ValueSubstitutionBuilder, redundant_decoy, substitution_check
+from .misleading import MisleadingChunkBuilder, ValueSubstitutionBuilder, redundant_decoys, substitution_check
 from .schema import QAExample, Recipe, Scenario
 
 
@@ -19,12 +19,14 @@ class ScenarioBuilder:
         seed: int = 0,
         misleading_builder: MisleadingChunkBuilder | None = None,
         hard_traps: bool = False,
+        n_decoys: int | None = None,
     ):
         self.answer_pool = answer_pool
         self.k = k
         self.seed = seed
         self.misleading_builder = misleading_builder or ValueSubstitutionBuilder()
-        self.hard_traps = hard_traps
+        # n_decoys is the coalition-size knob; hard_traps is the boolean shorthand for n_decoys=1.
+        self.n_decoys = n_decoys if n_decoys is not None else (1 if hard_traps else 0)
 
     def _rng(self, qid: str, salt: str) -> random.Random:
         # A stable per-question seed: the built-in hash() is salted per process and would
@@ -43,8 +45,7 @@ class ScenarioBuilder:
         order_rng.shuffle(distractor_pool)
         # k is a floor on context size: the gold chunks and the near-miss are always kept,
         # so the count is max(k, len(gold) + 1).
-        n_extra = 1 if self.hard_traps else 0
-        n_distractors = max(0, self.k - len(gold) - 1 - n_extra)
+        n_distractors = max(0, self.k - len(gold) - 1 - self.n_decoys)
         distractors = distractor_pool[:n_distractors]
 
         # Build the near-miss against the full assembled context, so the planted wrong value
@@ -61,9 +62,9 @@ class ScenarioBuilder:
             return None
         misleading_chunk, recipe_bits = built
 
-        extra = []
-        if self.hard_traps:
-            extra = [redundant_decoy(example.qid, misleading_chunk, recipe_bits["intended_wrong_answer"])]
+        extra = redundant_decoys(
+            example.qid, misleading_chunk, recipe_bits["intended_wrong_answer"], self.n_decoys
+        ) if self.n_decoys else []
         chunks = gold + [misleading_chunk] + extra + distractors
         order_rng.shuffle(chunks)
 
