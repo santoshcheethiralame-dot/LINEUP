@@ -12,6 +12,19 @@ Artifacts: `results_tables.md` (Tables 1–3), `results_ci.md` (no-culprit CIs),
   role via a non-circular leave-one-out oracle.
 - **Evidence:** Method section; released HF dataset; the human-validation study (below).
 
+## C1b — Oracle robustness (the causal axis has no tunable threshold)
+- **Claim:** the causal label is a discrete counterfactual (removing a chunk flips the answer's
+  value), so there is no threshold to game; an independent signal confirms it.
+- **Evidence:** **Fig 9**; `run_oracle_robustness.py` (local, all 1,766 pooled wrong cases).
+- **Numbers:** the never-used leave-one-out logprob drop agrees with the discrete causal label at
+  **AUROC 0.90** (0.92 on salient chunks); median Δ **3.09 nats** causal vs **0.00** non-causal. A
+  tunable rule (causal := Δ > T) is threshold-sensitive, but at the natural band T=0.5–1 it
+  reproduces the discrete no-culprit rate (**35–39%** vs the shipped **37%**).
+- **Taxonomy of no-culprit cases (n=649):** built on the reliable causal axis — **coalition (≥2
+  chunks each flip the answer) 54%**, no single cause (none flips alone) 30%, one silent driver
+  16%. So **~84% are redundant/distributed causation** — there is no single passage to name because
+  there are several (or none singly). Directly explains the headline.
+
 ## Pillar A — Effect-based attribution localizes the culprit; lexical overlap does not
 - **Claim:** ContextCite and SingleChunk find the culprit well; LLM-judge is middling; lexical lags.
 - **Evidence:** Table 1; **Fig 3**.
