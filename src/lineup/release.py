@@ -204,7 +204,7 @@ The labels describe one model's behaviour on one question family; a different mo
 
 ## License
 
-Released under the MIT License. The underlying questions and passages derive from HotpotQA, distributed under CC BY-SA 4.0.
+Released under the MIT License. The underlying questions and passages derive from HotpotQA (CC BY-SA 4.0) and 2WikiMultiHopQA; refer to their original licenses for the source content.
 
 ## Citation
 
