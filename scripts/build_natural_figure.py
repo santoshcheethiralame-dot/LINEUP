@@ -55,7 +55,7 @@ def main():
     ax.set_title("Ill-posedness holds without any planting (natural ≈ constructed)")
     ax.legend()
     fig.tight_layout()
-    fig.savefig(FIG, dpi=150)
+    fig.savefig(FIG, dpi=300)
 
     L = ["# Natural-retrieval slice: ill-posedness is not a construction artifact", ""]
     L.append("Organic errors from each dataset's own distractors, with **no planted near-miss** and no decoys.")

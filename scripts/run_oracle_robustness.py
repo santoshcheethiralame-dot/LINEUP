@@ -129,7 +129,7 @@ def main():
     ax.set_title(f"An independent signal confirms the causal axis (AUROC {auc_all:.2f})")
     ax.legend()
     fig.tight_layout()
-    fig.savefig(FIG, dpi=150)
+    fig.savefig(FIG, dpi=300)
 
     # --- report ---
     L = ["# Oracle robustness & no-culprit taxonomy", ""]

@@ -80,7 +80,7 @@ def report(model):
     ax.legend(frameon=False)
     fig.tight_layout()
     FIG.mkdir(parents=True, exist_ok=True)
-    fig.savefig(FIG / "fig7_doseresponse.png", dpi=150)
+    fig.savefig(FIG / "fig7_doseresponse.png", dpi=300)
     print(f"\nwrote {FIG / 'fig7_doseresponse.png'}")
 
 

@@ -101,7 +101,7 @@ def make_figure(full):
     axes[0].set_ylabel("errors with no single culprit (%)")
     fig.suptitle("Ill-posedness tracks reasoning structure (comparison-type in blue)")
     fig.tight_layout()
-    fig.savefig(FIG, dpi=150)
+    fig.savefig(FIG, dpi=300)
 
 
 def main():

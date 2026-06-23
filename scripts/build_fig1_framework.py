@@ -92,7 +92,7 @@ def main():
             ha="left", va="center", fontsize=10.5, fontweight="bold", color=CULPRIT)
 
     fig.tight_layout()
-    fig.savefig(FIG, dpi=200, bbox_inches="tight")
+    fig.savefig(FIG, dpi=300, bbox_inches="tight")
     print(f"wrote {FIG}")
 
 

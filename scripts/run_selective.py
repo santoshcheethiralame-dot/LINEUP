@@ -88,7 +88,7 @@ def main():
     ax.legend(frameon=False)
     fig.tight_layout()
     FIG.mkdir(parents=True, exist_ok=True)
-    fig.savefig(FIG / "fig5_selective.png", dpi=150)
+    fig.savefig(FIG / "fig5_selective.png", dpi=300)
     plt.close(fig)
     print(f"\nwrote {FIG / 'fig5_selective.png'}")
 

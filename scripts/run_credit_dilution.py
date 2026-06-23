@@ -94,7 +94,7 @@ def main():
     ax.set_title("As blame is shared, scalar attribution dilutes credit across it")
     ax.legend()
     fig.tight_layout()
-    fig.savefig(FIG, dpi=150)
+    fig.savefig(FIG, dpi=300)
 
     L = ["# Credit dilution (why single-chunk attribution is the wrong primitive)", ""]
     L.append("For each wrong case with a responsible set R = {near-miss, decoys}, we measure the share of")

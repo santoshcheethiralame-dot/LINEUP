@@ -78,7 +78,7 @@ def fig_no_culprit(cells):
     ax.set_ylim(0, 62)
     ax.legend(frameon=False)
     fig.tight_layout()
-    fig.savefig(FIG / "fig1_no_culprit.png", dpi=150)
+    fig.savefig(FIG / "fig1_no_culprit.png", dpi=300)
     plt.close(fig)
 
 
@@ -99,7 +99,7 @@ def fig_set_recovery(cells):
     ax.set_ylim(0, 1)
     ax.legend(frameon=False)
     fig.tight_layout()
-    fig.savefig(FIG / "fig2_set_recovery.png", dpi=150)
+    fig.savefig(FIG / "fig2_set_recovery.png", dpi=300)
     plt.close(fig)
 
 
@@ -120,7 +120,7 @@ def fig_methods(cells):
     ax.set_title("Effect-based attribution localizes the culprit; lexical overlap does not")
     ax.set_ylim(0, 1)
     fig.tight_layout()
-    fig.savefig(FIG / "fig3_methods.png", dpi=150)
+    fig.savefig(FIG / "fig3_methods.png", dpi=300)
     plt.close(fig)
 
 
@@ -141,7 +141,7 @@ def fig_agreement(cells):
     ax.set_ylim(0, 0.6)
     ax.legend(frameon=False)
     fig.tight_layout()
-    fig.savefig(FIG / "fig4_agreement.png", dpi=150)
+    fig.savefig(FIG / "fig4_agreement.png", dpi=300)
     plt.close(fig)
 
 
