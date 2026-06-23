@@ -54,6 +54,13 @@ Artifacts: `results_tables.md` (Tables 1–3), `results_ci.md` (no-culprit CIs),
   (single pick) decays monotonically **0.36 → 0.27 → 0.24 → 0.18** (tracking the top-1 ≤ 1/m bound)
   while recall@k (set) holds/grows **0.36 → 0.59 → 0.74 → 0.73**, and the no-culprit rate climbs
   **29 → 32 → 44 → 47%**. A clean controlled 4-point curve only a constructed benchmark can produce.
+- **Credit dilution — the mechanism (Fig 10; `run_credit_dilution.py`, local):** the strongest
+  responsible chunk's share of ContextCite's responsible score mass falls monotonically toward the
+  1/|R| perfect-split floor as the coalition grows — **0.70 (|R|=2) → 0.53 (|R|=3) → 0.48 (|R|=4)**;
+  pooled hard-traps cells (|R|=2, n=968) give **0.66**, corroborating the dose ladder. The method
+  genuinely *splits* credit across the responsible set, so a single pick must shed the rest — the
+  empirical mechanism behind the recall@1 decay. The linear surrogate already exhibits the
+  credit-splitting Shapley predicts, so no Shapley run is needed.
 
 ## C2 — REMEDY: calibrated selective attribution (the method we build)
 - **Claim:** a calibrated confidence signal lets attribution **abstain** when no single culprit is
