@@ -40,3 +40,5 @@ htmlcov/
 .vscode/
 .DS_Store
 Thumbs.db
+
+/release_full/
