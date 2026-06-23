@@ -132,12 +132,14 @@ Artifacts: `results_tables.md` (Tables 1–3), `results_ci.md` (no-culprit CIs),
   the human ceiling, vs ~14% chance on a 7-way choice. Agreement splits sharply: culprit cases
   **80% / 63%** vs no-culprit cases **33% / 13%** — humans force a pick when there is none, yet are
   **100% / 67% precise** when they do say "none."
-- **Adjudication (every disagreement, blind, reading the annotator notes):** oracle defensible
-  **17/25**, ambiguous **8/25**, clearly wrong **0/25**. Disagreements are human salience-bias
-  (picking the passage that merely *contains* the wrong value, or the gold passage), not oracle error
-  — so the study both *validates* the oracle and *independently reproduces* the single-culprit bias.
-- **Caveats:** convenience sample (annotator-familiar topics); author-adjudicated within the causal
-  framework — the 8 ambiguous + a spot-check of the 17 should be confirmed by a neutral reader.
+- **Adjudication (team's discussed verdicts as ground truth):** taking the team-adjudicated answer as
+  truth, the oracle is correct on **37/50**, **wrong on 4 (8%)**, ambiguous/unsure on 9 → accuracy
+  **90%** on the 41 resolvable cases (74% floor if every unsure counts against it). The 4 errors:
+  r019 (E→A), r022/r030/r042 (none→a salient passage) — **3 of 4 are NONE-vs-salient boundary calls**,
+  the one genuinely fuzzy axis. Disagreements remain concentrated on no-culprit cases (humans force a
+  pick), so the study validates the oracle and reproduces the single-culprit bias.
+- **Caveats:** convenience sample (annotator-familiar topics); the team are not expert annotators
+  (verdicts weighted by the discussion notes). Numbers from the team adjudication sheet + `review_key.csv`.
 
 ## Limitations (state these to preempt reviewers)
 - 7B-class open models only (frontier GPT-4o/Claude is future work / optional slice).
