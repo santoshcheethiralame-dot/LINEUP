@@ -123,11 +123,21 @@ Artifacts: `results_tables.md` (Tables 1–3), `results_ci.md` (no-culprit CIs),
 - **Numbers:** per-passage role κ **0.13–0.47** across all family pairs; 2Wiki baseline near
   chance (0.13–0.26). → attribution must be evaluated per model.
 
-## Validation — the oracle's labels match human judgement
-- **Claim:** independent humans pick the same culprit the oracle does.
-- **Evidence:** human-validation table (50 blind cases, 3 reviewers).
-- **Numbers:** PENDING — human↔oracle agreement, majority-vote agreement, no-culprit ("none")
-  agreement, inter-rater agreement (from `score_validation.py`).
+## Validation — the oracle's labels match human judgement (Table 3)
+- **Claim:** independent humans pick the oracle's culprit at/above the rate they agree with each
+  other, and the residual gap is the single-culprit bias itself.
+- **Evidence:** 50 blind cases, 2 reliable annotators (Rushi excluded — 20%, GPT-assisted noise);
+  `review_key.csv`; the adjudication study.
+- **Numbers:** Santosh↔oracle **66%**, Nivas 48%; inter-rater **60%** — so the oracle sits *at/above*
+  the human ceiling, vs ~14% chance on a 7-way choice. Agreement splits sharply: culprit cases
+  **80% / 63%** vs no-culprit cases **33% / 13%** — humans force a pick when there is none, yet are
+  **100% / 67% precise** when they do say "none."
+- **Adjudication (every disagreement, blind, reading the annotator notes):** oracle defensible
+  **17/25**, ambiguous **8/25**, clearly wrong **0/25**. Disagreements are human salience-bias
+  (picking the passage that merely *contains* the wrong value, or the gold passage), not oracle error
+  — so the study both *validates* the oracle and *independently reproduces* the single-culprit bias.
+- **Caveats:** convenience sample (annotator-familiar topics); author-adjudicated within the causal
+  framework — the 8 ambiguous + a spot-check of the 17 should be confirmed by a neutral reader.
 
 ## Limitations (state these to preempt reviewers)
 - 7B-class open models only (frontier GPT-4o/Claude is future work / optional slice).

@@ -48,13 +48,14 @@ detection, 0.66)** — it survives as a single motivating sentence, not a figure
 - fig3 → appendix (Table 1 already has the per-method localization numbers).
 - fig8 → appendix (the 44% frontier number lands in one sentence; the flat-with-scale plot is armour).
 
-## Build list (not yet made)
-1. **Fig 1 framework schematic** — pipeline (scenarios → generations → oracle roles → predictions →
-   results) + the 2×2 role grid. Reuse the deck's `pipeline_slide` + `roles_2x2_slide` as the design;
-   render a clean vector version for the paper.
-2. **Table 3 human-validation** — needs the 8-case Tier-1 adjudication finished → oracle-accuracy number.
-3. **Natural slice rows** — 2 more cells in flight on Kaggle (2wiki/qwen, hotpotqa/mistral) → turns
-   appendix item D from 1 cell into a 3-cell robustness table.
+## Build list
+1. **Fig 1 framework schematic** — DONE (`fig1_framework.png`, `build_fig1_framework.py`).
+2. **Table 3 human-validation** — DONE (66% / 60% inter-rater; culprit 80% vs none 33%; adjudication
+   17/8/0). Numbers in `claim_evidence.md` + `validation/table3.md`.
+3. **Natural slice rows** — DONE (3 cells, Fig 12).
+
+All main-body figures and tables now exist or have their numbers. Remaining before submission: HF
+dataset release (needs token); neutral spot-check of the 8 ambiguous adjudication cases; prose.
 
 ## Status of every numbered result (for the author)
 - Locked & in `claim_evidence.md`: Pillars A, B, C, D, E; C1, C1b, C2, C3; dose-response; credit
