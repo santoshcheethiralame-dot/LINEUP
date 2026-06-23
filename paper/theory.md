@@ -47,16 +47,40 @@ Assume `m`-fold redundancy with `m ≥ 2` and that the model adopts the redundan
 `recall@1 ≤ 1/|R| = 1/m`; the effect-set of the `m` highest-effect chunks attains `recall = 1` when
 the method ranks `R` above the rest. ∎
 
-## Remark — Shapley attribution cannot express it either
+## Proposition 2 (Shapley attribution dilutes redundant credit to 1/m)
 
-Shapley values distribute the total effect across chunks and satisfy efficiency (the parts sum to
-the whole). Under symmetric `m`-fold redundancy the `m` responsible chunks are interchangeable, so
-by the Shapley symmetry axiom each receives an equal share `≈ 1/m` of the credit. Shapley thus
-reports each redundant chunk as *partially* responsible — it cannot say "each one alone is fully
-sufficient" or "no single chunk is necessary." The redundancy/no-single-culprit structure is
-invisible to any per-chunk scalar score, single-chunk or Shapley alike; it is a property of the
-*set* of sufficient causes. This is the formal case for set-valued attribution (our conformal
-sets) plus an explicit *no-single-culprit* abstention.
+Model the wrong value as a monotone-OR game: `v(S) = 1` if `val(M(q, S)) = w` else `0`, and assume
+the model produces `w` iff `S` contains at least one member of `R` (any single responsible chunk
+suffices — exactly our redundancy construction). Then the Shapley value `φ_i` satisfies
+
+- `φ_i = 1/m` for every `c_i ∈ R`, and `φ_j = 0` for every `c_j ∉ R`.
+
+**Proof.** Non-members are *null players*: for any `S`, `v(S ∪ {c_j}) = v(S)` when `c_j ∉ R` (adding a
+non-responsible chunk never changes whether some responsible chunk is present), so `φ_j = 0`. The `m`
+members of `R` are mutually *symmetric* in `v` (interchangeable), so Shapley symmetry gives them equal
+value. Efficiency gives `Σ_i φ_i = v(C) − v(∅) = 1 − 0 = 1`. Equal shares summing to 1 over `m`
+players give `φ_i = 1/m`. ∎
+
+So Shapley reports each responsible chunk as only `1/m` responsible, vanishing as redundancy grows, and
+never expresses that each is *alone sufficient* or that *no single chunk is necessary*. The
+no-single-culprit structure is invisible to any per-chunk scalar score — single-chunk pick or Shapley
+alike — because it is a property of the *set* of sufficient causes, not of any one chunk. This is the
+formal case for set-valued attribution.
+
+## Proposition 3 (a conformal set restores a coverage guarantee)
+
+The remedy lives at the set level. Let `s(c)` be any per-chunk score and, for a labelled case, let the
+nonconformity score be the rank of the true culprit under `s` (1 = top). Given an exchangeable
+calibration set of size `n` and miscoverage `α`, let `τ_α` be the `⌈(1−α)(n+1)⌉`-th smallest
+calibration rank, and output the top-`τ_α` chunks. By the standard split-conformal guarantee
+[Vovk et al.; Angelopoulos & Bates], for an exchangeable test case
+
+- `P(culprit ∈ top-τ_α set) ≥ 1 − α`,
+
+distribution-free, assuming only exchangeability — no model of `s` or of the data. *(Empirical mirror:
+α=0.1 gives `τ=2` and test coverage 0.94; the calibrated `τ` rises 2→3 from baseline to hard-traps, so
+the set size itself reports the redundancy of Proposition 1.)* We invoke the standard result rather than
+reprove it; the contribution is applying it to attribution and observing the size–redundancy link.
 
 ## Takeaways to state in the paper
 - Necessity-based attribution (leave-one-out, ContextCite's ablation target) is *undefined* as a
