@@ -30,6 +30,12 @@ Artifacts: `results_tables.md` (Tables 1–3), `results_ci.md` (no-culprit CIs),
 - **Evidence:** Table 1; **Fig 3**.
 - **Numbers:** ContextCite top-1 **0.70–0.92**, SingleChunk 0.62–0.95, LLM-judge 0.58–0.76,
   Lexical **0.22–0.57**. Effect-based beats lexical in **all 12** settings.
+- **Errors are salience-shaped — for the causal methods (`run_error_direction.py`):** on the well-posed
+  cases a method gets wrong, the misfire lands on the planted salient red-herring far above chance —
+  single_chunk **2.8×**, ContextCite **2.5×**, llm_judge **2.4×** — but lexical only **1.1×** (its
+  errors scatter to inert). The "fooled by salience" effect is real but localized to the minority of
+  cases the effect-based methods already miss, and it is a property of *causal* scoring, not surface
+  overlap. Refines (does not contradict) the aggregate result that methods are not salience-fooled.
 
 ## Pillar B — SPINE: a third of organic errors have no single culprit
 - **Claim:** 27–53% of wrong cases are ill-posed — no single causal+salient passage.
@@ -44,6 +50,12 @@ Artifacts: `results_tables.md` (Tables 1–3), `results_ci.md` (no-culprit CIs),
   distractors — zero construction — show **28% no-culprit**, matching the 29% constructed baseline.
   So ill-posedness is NOT an artifact of our planted near-miss; it holds with no planting at all.
   (ContextCite top-1 0.96 on these.) Kills the "it's synthetic" objection.
+- **Ill-posedness tracks reasoning structure (Fig 11; `run_structure.py`):** comparison-type questions
+  are far more ill-posed than single-chain ones — HotpotQA **comparison 57%** [43,70] vs **bridge 34%**
+  [30,37] (disjoint CIs); 2Wiki **bridge_comparison 55%** [47,62] vs **inference 28%** [22,34].
+  Comparison questions need facts about two entities → two necessary causes → no single culprit. Holds
+  in baseline alone (59% vs 36%), so not a planting artifact. Ill-posedness is partly a *fingerprint of
+  multi-entity reasoning*, a semantic explanation of the headline.
 
 ## Pillar C — FLAGSHIP / constructive: single-chunk attribution is the wrong primitive
 - **Claim:** under redundant evidence a single pick structurally cannot cover the culprit set;
@@ -71,6 +83,11 @@ Artifacts: `results_tables.md` (Tables 1–3), `results_ci.md` (no-culprit CIs),
   Best signal (top1−top2 margin) reaches **AUROC 0.77 [0.73, 0.80]** for "is this pick right".
   Abstaining to 50% coverage → accuracy **0.54 [0.49, 0.58]** (+0.19); to 30% → **0.64**. On the
   abstained half, effect-set recall **0.31 → 0.53**.
+- **Abstention targets the ill-posed cases (`run_abstention_targeting.py`):** ranking by the ContextCite
+  margin and abstaining the low-confidence tail, the abstained set is ~1.5× more no-culprit than the
+  answered set at every coverage (50%: answered **29%** vs abstained **44.5%** no-culprit). The remedy
+  stays silent precisely where the problem is ill-posed — it abstains for the *right reason*, not by
+  dropping random hard cases. Direct validation of C2.
 
 ## C3 — RIGOR: conformal attribution sets (a coverage guarantee)
 - **Claim:** a split-conformal set provably contains the culprit with probability ≥ 1−α, and the
