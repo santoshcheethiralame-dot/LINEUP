@@ -37,10 +37,10 @@ Artifacts: `results_tables.md` (Tables 1–3), `results_ci.md` (no-culprit CIs),
   the effect-set recovers ~2× more. → use set-valued attribution.
 - **Evidence:** **Fig 2**; Table 2 (recall@1 vs recall@k).
 - **Numbers:** all **6** hard-traps cells: recall@1 **0.26–0.37** → recall@k **0.57–0.75** (~2×).
-- **Dose-response (Fig 7; 0/1/3 redundant decoys, HotpotQA/qwen):** as redundancy grows, recall@1
-  (single pick) decays **0.36 → 0.27 → 0.18** (tracking the top-1 ≤ 1/m bound) while recall@k (set)
-  holds/grows **0.36 → 0.59 → 0.73**, and the no-culprit rate climbs **29 → 32 → 47%**. A clean
-  controlled curve only a constructed benchmark can produce. (n=2 point pending.)
+- **Dose-response (Fig 7; 0/1/2/3 redundant decoys, HotpotQA/qwen):** as redundancy grows, recall@1
+  (single pick) decays monotonically **0.36 → 0.27 → 0.24 → 0.18** (tracking the top-1 ≤ 1/m bound)
+  while recall@k (set) holds/grows **0.36 → 0.59 → 0.74 → 0.73**, and the no-culprit rate climbs
+  **29 → 32 → 44 → 47%**. A clean controlled 4-point curve only a constructed benchmark can produce.
 
 ## C2 — REMEDY: calibrated selective attribution (the method we build)
 - **Claim:** a calibrated confidence signal lets attribution **abstain** when no single culprit is
