@@ -27,12 +27,20 @@ Artifacts: `results_tables.md` (Tables 1–3), `results_ci.md` (no-culprit CIs),
 - **Frontier check (gpt-oss-120B via Cerebras, 136 cases):** 38% error rate; **44% no single
   culprit** (23/52), 95% CI [31–58%] — in the open-model band, so the ill-posedness holds at
   120B scale, not just 7B. (Generation-only oracle; no logprob methods on the closed API.)
+- **Natural-retrieval slice (no planting, HotpotQA/qwen):** organic errors from the dataset's own
+  distractors — zero construction — show **28% no-culprit**, matching the 29% constructed baseline.
+  So ill-posedness is NOT an artifact of our planted near-miss; it holds with no planting at all.
+  (ContextCite top-1 0.96 on these.) Kills the "it's synthetic" objection.
 
 ## Pillar C — FLAGSHIP / constructive: single-chunk attribution is the wrong primitive
 - **Claim:** under redundant evidence a single pick structurally cannot cover the culprit set;
   the effect-set recovers ~2× more. → use set-valued attribution.
 - **Evidence:** **Fig 2**; Table 2 (recall@1 vs recall@k).
 - **Numbers:** all **6** hard-traps cells: recall@1 **0.26–0.37** → recall@k **0.57–0.75** (~2×).
+- **Dose-response (Fig 7; 0/1/3 redundant decoys, HotpotQA/qwen):** as redundancy grows, recall@1
+  (single pick) decays **0.36 → 0.27 → 0.18** (tracking the top-1 ≤ 1/m bound) while recall@k (set)
+  holds/grows **0.36 → 0.59 → 0.73**, and the no-culprit rate climbs **29 → 32 → 47%**. A clean
+  controlled curve only a constructed benchmark can produce. (n=2 point pending.)
 
 ## C2 — REMEDY: calibrated selective attribution (the method we build)
 - **Claim:** a calibrated confidence signal lets attribution **abstain** when no single culprit is
