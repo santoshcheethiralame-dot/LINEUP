@@ -46,10 +46,12 @@ Artifacts: `results_tables.md` (Tables 1–3), `results_ci.md` (no-culprit CIs),
 - **Frontier check (gpt-oss-120B via Cerebras, 136 cases):** 38% error rate; **44% no single
   culprit** (23/52), 95% CI [31–58%] — in the open-model band, so the ill-posedness holds at
   120B scale, not just 7B. (Generation-only oracle; no logprob methods on the closed API.)
-- **Natural-retrieval slice (no planting, HotpotQA/qwen):** organic errors from the dataset's own
-  distractors — zero construction — show **28% no-culprit**, matching the 29% constructed baseline.
-  So ill-posedness is NOT an artifact of our planted near-miss; it holds with no planting at all.
-  (ContextCite top-1 0.96 on these.) Kills the "it's synthetic" objection.
+- **Natural-retrieval slice (no planting; 2 datasets × 2 families; Fig 12):** organic errors from the
+  dataset's own distractors — zero construction, no planted near-miss — show no-culprit rates that
+  track the constructed baseline in **every cell**: HotpotQA/qwen **28%** (vs 29%), 2Wiki/qwen **26%**
+  (vs 28%), HotpotQA/mistral **54%** (vs 49%). It even reproduces the cross-family ordering (Mistral
+  most ill-posed). So ill-posedness is NOT an artifact of our construction; it holds with no planting
+  at all, across datasets and models. (ContextCite top-1 0.77–0.96 on these.) Kills "it's synthetic."
 - **Ill-posedness tracks reasoning structure (Fig 11; `run_structure.py`):** comparison-type questions
   are far more ill-posed than single-chain ones — HotpotQA **comparison 57%** [43,70] vs **bridge 34%**
   [30,37] (disjoint CIs); 2Wiki **bridge_comparison 55%** [47,62] vs **inference 28%** [22,34].
