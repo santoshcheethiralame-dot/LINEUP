@@ -85,6 +85,11 @@ Artifacts: `results_tables.md` (Tables 1–3), `results_ci.md` (no-culprit CIs),
   AUROC **0.48–0.75** (near chance in several cells). Frame as "never high enough to gate on."
 - **But (links to C2):** a *calibrated, pooled* confidence signal reaches AUROC **0.77** for
   self-correctness — so the remedy is calibration + abstention, not raw method confidence.
+- **Self-detecting ill-posedness is weak (`run_illposed_detector.py`):** the best score-only signal
+  (effect-mass **entropy**) predicts the no-culprit label at only **AUROC 0.66 [0.63, 0.69]** —
+  above chance but unreliable. Methods carry a faint self-signal that a case has no single culprit
+  but cannot be trusted to flag it, which is exactly why the distribution-free conformal guarantee
+  (C3) — not the method's own confidence — is the right remedy.
 
 ## Pillar E — Errors are model-specific
 - **Claim:** which passage is to blame barely transfers across model families.
