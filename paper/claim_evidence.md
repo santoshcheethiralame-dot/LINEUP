@@ -40,7 +40,7 @@ Artifacts: `results_tables.md` (Tables 1–3), `results_ci.md` (no-culprit CIs),
 ## Pillar B — SPINE: a third of organic errors have no single culprit
 - **Claim:** 27–53% of wrong cases are ill-posed — no single causal+salient passage.
 - **Evidence:** **Fig 1**; `results_ci.md`.
-- **Numbers:** no-culprit **27–53%** (Mistral most ill-posed, 46–53%). Present in **baseline**
+- **Numbers:** no-culprit **27–53%** (Mistral most ill-posed, 41–53%). Present in **baseline**
   too (28–53%), so it is inherent to organic error, **not** a hard-traps artifact. CIs sit well
   above zero.
 - **Frontier check (gpt-oss-120B via Cerebras, 136 cases):** 38% error rate; **44% no single
