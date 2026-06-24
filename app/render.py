@@ -92,14 +92,38 @@ def case_is_fooled(qid, roles, predictions_by_qid):
     return any(role_of.get(p.predicted_culprit_id) == "misleading" for p in predictions_by_qid.get(qid, {}).values())
 
 
-def case_options(scenarios, roles, predictions_by_qid, only_fooled=False):
-    return [qid for qid in scenarios if (not only_fooled or case_is_fooled(qid, roles, predictions_by_qid))]
+def case_no_culprit(qid, roles):
+    """A wrong case where no passage is both causal and salient — the ill-posed case."""
+    case = roles.get(qid)
+    return bool(case) and not case.original_correct and not any(cr.role == "culprit" for cr in case.chunk_roles)
 
 
-def case_label(qid, scenarios, generations):
+def headline_no_culprit_rate(roles):
+    """Share of wrong cases with no single culprit — the benchmark's headline finding."""
+    wrong = [c for c in roles.values() if not c.original_correct]
+    if not wrong:
+        return None, 0
+    nc = sum(1 for c in wrong if not any(cr.role == "culprit" for cr in c.chunk_roles))
+    return nc / len(wrong), len(wrong)
+
+
+def case_options(scenarios, roles, predictions_by_qid, only_fooled=False, only_no_culprit=False):
+    out = []
+    for qid in scenarios:
+        if only_fooled and not case_is_fooled(qid, roles, predictions_by_qid):
+            continue
+        if only_no_culprit and not case_no_culprit(qid, roles):
+            continue
+        out.append(qid)
+    return out
+
+
+def case_label(qid, scenarios, generations, roles=None):
     scenario = scenarios[qid]
     generation = generations.get(qid)
     status = "—" if generation is None else ("correct" if generation.is_correct else "wrong")
+    if roles is not None and case_no_culprit(qid, roles):
+        status = "wrong · no single culprit"
     question = scenario.question if len(scenario.question) <= 48 else scenario.question[:46] + "…"
     return f"{qid} · {question} · {status}"
 
@@ -112,9 +136,20 @@ def case_detail(qid, scenarios, generations, roles, predictions_by_qid):
 
     answer = generation.model_answer if generation else "—"
     correct = generation.is_correct if generation else None
+    no_culprit = (correct is False) and not any(r == "culprit" for r in role_of.values())
     status_bg, status_fg, status_text = (
-        ("#E1F5EE", "#085041", "correct") if correct else ("#FCEBEB", "#791F1F", "wrong · model fooled")
+        ("#E1F5EE", "#085041", "correct") if correct else ("#FCEBEB", "#791F1F", "wrong")
     )
+
+    banner = ""
+    if no_culprit:
+        banner = (
+            '<div style="margin-top:14px;background:#EAF3FA;border-left:4px solid #3b6fb6;border-radius:6px;'
+            'padding:11px 14px;font-size:13px;color:#11202e;line-height:1.6;">'
+            '<b>NO SINGLE CULPRIT.</b> No retrieved passage is both <i>causal</i> (removing it flips the answer) '
+            'and <i>salient</i> (states the wrong value) — the blame is shared or diffuse. Every method below is '
+            'forced to name one anyway, with no way to warn you. This is the ill-posed case LINEUP is built to surface.</div>'
+        )
 
     head = (
         f'<div style="display:flex;justify-content:space-between;align-items:center;">'
@@ -156,10 +191,10 @@ def case_detail(qid, scenarios, generations, roles, predictions_by_qid):
         )
 
     note = ""
-    if fooled and not correct:
+    if fooled and not correct and not no_culprit:
         note = (
             f'<div style="margin-top:16px;background:rgba(128,128,128,0.08);border-radius:6px;padding:11px 13px;font-size:12.5px;opacity:0.9;line-height:1.6;">'
             f'{fooled} of {len(predictions)} methods blamed a chunk that only <i>looks</i> responsible — the oracle marks it misleading, not the cause.</div>'
         )
 
-    return f'<div style="border:0.5px solid rgba(128,128,128,0.25);border-radius:12px;padding:1rem 1.25rem;">{head}{chunk_rows}{method_rows}{note}</div>'
+    return f'<div style="border:0.5px solid rgba(128,128,128,0.25);border-radius:12px;padding:1rem 1.25rem;">{head}{banner}{chunk_rows}{method_rows}{note}</div>'
