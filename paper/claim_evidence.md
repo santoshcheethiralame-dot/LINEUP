@@ -24,6 +24,12 @@ Artifacts: `results_tables.md` (Tables 1–3), `results_ci.md` (no-culprit CIs),
   chunks each flip the answer) 54%**, no single cause (none flips alone) 30%, one silent driver
   16%. So **~84% are redundant/distributed causation** — there is no single passage to name because
   there are several (or none singly). Directly explains the headline.
+- **Salience-axis sensitivity — honest (`run_salience_sensitivity.py`):** the causal axis is threshold-free,
+  but the *salience* axis is a soft text-match, so we stress it: pooled no-culprit is **43%** (strict,
+  answer verbatim), **37%** (shipped phrase-match), **19%** (loose token-overlap, over-generous). The rate
+  is matcher-dependent (19–43%) but always substantial; the phrase-level **37%** is the principled choice
+  (whole-value, not stray-token). **Lead with 37% and disclose the band** — don't claim full robustness on
+  the soft axis; even the over-generous floor leaves ~1-in-5 errors ill-posed.
 
 ## Pillar A — Effect-based attribution localizes the culprit; lexical overlap does not
 - **Claim:** ContextCite and SingleChunk find the culprit well; LLM-judge is middling; lexical lags.
