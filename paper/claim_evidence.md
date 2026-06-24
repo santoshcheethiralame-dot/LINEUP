@@ -162,6 +162,12 @@ Artifacts: `results_tables.md` (Tables 1–3), `results_ci.md` (no-culprit CIs),
 - **Caveats:** convenience sample (annotator-familiar topics); the team are not expert annotators
   (verdicts weighted by the discussion notes). Numbers from the team adjudication sheet + `review_key.csv`.
 
+## Appendix depth checks (`run_extra_analyses.py`) — keep in the appendix, not the main body
+- **Position:** ContextCite top-1 is flat across context position (early 0.81 / middle 0.77 / late 0.81;
+  spread 0.04) — no strong "lost in the middle" effect for attribution. A clean null; report to pre-empt it.
+- **Graded correctness:** near-miss errors (answer shares a token with gold) are more ill-posed than
+  total-miss (**46% vs 35%** no-culprit) — ill-posedness tracks error subtlety.
+
 ## Limitations (state these to preempt reviewers)
 - 7B-class open models only (frontier GPT-4o/Claude is future work / optional slice).
 - Two datasets, both Wikipedia-based multi-hop QA; ~70–220 wrong cases per cell.
