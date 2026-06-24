@@ -97,7 +97,15 @@ Artifacts: `results_tables.md` (Tables 1–3), `results_ci.md` (no-culprit CIs),
 - **Evidence:** **Fig 6**; `run_conformal.py` (held-out calibration/test split).
 - **Numbers:** 801 well-posed cases (test 390). At α=0.1, calibrated size **τ=2 → test coverage
   0.94** vs a single pick's **0.82**. Per condition: baseline **τ=2** (0.94), hard-traps **τ=3**
-  (0.96) — redundancy demands a larger set for the same guarantee.
+  (0.96).
+- **Baselines — honest (`run_conformal_baselines.py`):** naive set rules reach *comparable* coverage
+  on this data — fixed top-2 **0.94**, score-threshold **0.94** (avg size 1.5) — so conformal is NOT
+  more efficient. Its contribution is the **distribution-free guarantee at a chosen α**, which the
+  naive rules lack (their coverage rides on a hand-tuned k/threshold, with no recourse or
+  cross-distribution promise). **Lead C3 with calibration, not performance** — this pre-empts the
+  obvious "why not just top-k?" question. (Caveat: fixed top-2 still holds at 0.93 under redundancy,
+  so the τ=2→3 growth is a *safer margin*, not a rescue from catastrophic failure; an adaptive APS
+  variant bloats on diffuse effect scores and is dropped as a negative result.)
 
 ## Qualitative (Fig/Table in the appendix or main)
 - **Evidence:** `examples.md` — a clean culprit (ContextCite succeeds), a coalition (no single
