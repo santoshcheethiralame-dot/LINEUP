@@ -21,6 +21,7 @@ class ScenarioBuilder:
         hard_traps: bool = False,
         n_decoys: int | None = None,
         natural: bool = False,
+        retriever=None,
     ):
         self.answer_pool = answer_pool
         self.k = k
@@ -30,6 +31,9 @@ class ScenarioBuilder:
         self.n_decoys = n_decoys if n_decoys is not None else (1 if hard_traps else 0)
         # natural mode plants nothing: gold + the dataset's own distractors, for organic errors.
         self.natural = natural
+        # a retriever (e.g. BM25DistractorRetriever) sources distractors from real top-k retrieval
+        # over the corpus instead of the dataset's own — the realistic real-retrieval slice.
+        self.retriever = retriever
 
     def _rng(self, qid: str, salt: str) -> random.Random:
         # A stable per-question seed: the built-in hash() is salted per process and would
@@ -44,8 +48,17 @@ class ScenarioBuilder:
 
         order_rng = self._rng(example.qid, "order")
         gold = list(example.gold_chunks)
-        distractor_pool = list(example.distractor_pool)
-        order_rng.shuffle(distractor_pool)
+        if self.retriever is not None:
+            # Real-retrieval slice: distractors are a BM25 retriever's top hits over the corpus
+            # (the hardest, most lexically-similar passages), not the dataset's own. Keep the
+            # retriever's rank order rather than shuffling, so the context is a genuine top-k.
+            gold_titles = {chunk.title for chunk in gold}
+            distractor_pool = self.retriever.retrieve(
+                example.question, k=self.k + len(gold) + 4, exclude_titles=gold_titles
+            )
+        else:
+            distractor_pool = list(example.distractor_pool)
+            order_rng.shuffle(distractor_pool)
 
         if self.natural:
             # No planting: the context is the gold chunks plus the dataset's own distractors.
@@ -59,7 +72,7 @@ class ScenarioBuilder:
                 k=len(chunks),
                 original_value=example.answer,
                 intended_wrong_answer="",
-                substitution_type="natural",
+                substitution_type="retrieval" if self.retriever is not None else "natural",
                 source_gold_chunk_id="",
                 source_sentence_id=-1,
                 gold_chunk_ids=[chunk.chunk_id for chunk in gold],
