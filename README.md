@@ -75,6 +75,10 @@ Stages 3–5 need a GPU; the data and scenario stages, the scorer, the abstentio
 
 The `app/` directory is a small Streamlit explorer over the saved JSONL — an overview (the per-method table, the role-distribution bars, the selective-answering AUROCs) and a per-case view that colours each chunk by its true role and shows which chunk every method blamed. It needs no GPU or model: `pip install streamlit && streamlit run app/app.py` opens it on a bundled sample, and pointing the sidebar at a run's `outputs/` shows real results. See [app/README.md](app/README.md) for deployment.
 
+## Evaluate your own attribution method
+
+Score any per-passage attribution method against the benchmark's non-circular causal ground truth with a one-call API — the same scoring used for the paper, so your numbers are directly comparable. See the runnable [notebooks/quickstart.ipynb](notebooks/quickstart.ipynb) and [docs/evaluate.md](docs/evaluate.md) for the three steps (load → run your method → `evaluate`). The published method leaderboard is [paper/leaderboard.md](paper/leaderboard.md); regenerate it with `python scripts/build_leaderboard.py`.
+
 ## Quickstart
 
 Generate an answer and inspect its teacher-forced log-probabilities:
