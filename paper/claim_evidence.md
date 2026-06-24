@@ -75,6 +75,13 @@ Artifacts: `results_tables.md` (Tables 1–3), `results_ci.md` (no-culprit CIs),
   genuinely *splits* credit across the responsible set, so a single pick must shed the rest — the
   empirical mechanism behind the recall@1 decay. The linear surrogate already exhibits the
   credit-splitting Shapley predicts, so no Shapley run is needed.
+- **Holds on UN-PLANTED redundancy (`run_natural_coalition.py`):** the dose-response uses planted
+  decoys, so we also show the gap on the natural slice (no planting). **37%** of natural wrong cases
+  are *natural coalitions* (≥2 causal non-gold passages — distributed causation the model produces on
+  its own). On them a single pick recovers only **recall@1 0.10** of the responsible set vs **recall@k
+  0.48** for a set (~5×). The wrong-primitive is therefore NOT a construction artifact — organic
+  redundancy is common and a single pick structurally cannot cover it. Pre-empts "you engineered the
+  redundancy."
 
 ## C2 — REMEDY: calibrated selective attribution (the method we build)
 - **Claim:** a calibrated confidence signal lets attribution **abstain** when no single culprit is
