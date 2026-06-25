@@ -65,6 +65,11 @@ Artifacts: `results_tables.md` (Tables 1–3), `results_ci.md` (no-culprit CIs),
 - **Retrieval-depth sweep (Fig 14, appendix; `run_depth.py`; natural, HotpotQA/qwen):** as depth grows
   k=4→10 the error rate climbs (**24→34%**) but the no-culprit *fraction* is flat (**23–28%**). Ill-posedness
   is not an artifact of how much you retrieve; a steady ~quarter of errors are ill-posed at every depth.
+- **Third dataset — MuSiQue (`run_musique.py`; qwen/phi baseline):** the headline replicates on a third,
+  independent multi-hop dataset: no-culprit **26%** (qwen) / **35%** (phi), in the 27–53% band, with
+  ContextCite top-1 **0.88/0.89**. MuSiQue is markedly harder (error rate **57–58%** vs ~25–30%), yet the
+  ill-posed *fraction* sits in the same band — ill-posedness is a property of multi-hop RAG error, not of
+  one dataset.
 - **Ill-posedness tracks reasoning structure (Fig 11; `run_structure.py`):** comparison-type questions
   are far more ill-posed than single-chain ones — HotpotQA **comparison 57%** [43,70] vs **bridge 34%**
   [30,37] (disjoint CIs); 2Wiki **bridge_comparison 55%** [47,62] vs **inference 28%** [22,34].
