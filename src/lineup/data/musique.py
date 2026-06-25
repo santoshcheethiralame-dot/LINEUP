@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import os
 import re
 from typing import Iterator
 
@@ -7,7 +8,8 @@ from .schema import Chunk, QAExample
 
 # MuSiQue is multi-hop QA with gold supporting facts, like HotpotQA/2Wiki, but its rows mark support
 # per paragraph (is_supporting) rather than via a separate supporting_facts list, and paragraphs are
-# not pre-split into sentences. Hence its own parser. Set `repo` if the HF mirror moves.
+# not pre-split into sentences. Hence its own parser. The HF mirror can be overridden without editing
+# this file by setting the LINEUP_MUSIQUE_REPO environment variable (handy on Kaggle).
 DEFAULT_REPO = "dgslibisey/MuSiQue"
 _SENT = re.compile(r"(?<=[.!?])\s+")
 
@@ -48,9 +50,10 @@ def parse_musique(raw: dict, source: str = "musique") -> QAExample:
     )
 
 
-def load_examples(split: str = "validation", *, limit: int | None = None, repo: str = DEFAULT_REPO) -> Iterator[QAExample]:
+def load_examples(split: str = "validation", *, limit: int | None = None, repo: str | None = None) -> Iterator[QAExample]:
     from datasets import load_dataset
 
+    repo = repo or os.environ.get("LINEUP_MUSIQUE_REPO") or DEFAULT_REPO
     dataset = load_dataset(repo, split=split)
     for index, raw in enumerate(dataset):
         if limit is not None and index >= limit:
