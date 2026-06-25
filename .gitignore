@@ -42,3 +42,6 @@ htmlcov/
 Thumbs.db
 
 /release_full/
+
+/paper/depth_data/
+/paper/retrieval_data/

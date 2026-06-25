@@ -58,6 +58,13 @@ Artifacts: `results_tables.md` (Tables 1–3), `results_ci.md` (no-culprit CIs),
   (vs 28%), HotpotQA/mistral **54%** (vs 49%). It even reproduces the cross-family ordering (Mistral
   most ill-posed). So ill-posedness is NOT an artifact of our construction; it holds with no planting
   at all, across datasets and models. (ContextCite top-1 0.77–0.96 on these.) Kills "it's synthetic."
+- **Real BM25 retriever (`run_retrieval.py`; HotpotQA/qwen):** with a live BM25 retriever's distractors —
+  the hardest, most lexically-similar passages over the corpus, not the dataset's curated ones — no-culprit
+  is **31%**, matching natural (28%) and constructed (29%), with ContextCite top-1 still **0.96**. Closes the
+  "your context isn't a real retrieval" objection — the single strongest remaining attack on the setup.
+- **Retrieval-depth sweep (Fig 14, appendix; `run_depth.py`; natural, HotpotQA/qwen):** as depth grows
+  k=4→10 the error rate climbs (**24→34%**) but the no-culprit *fraction* is flat (**23–28%**). Ill-posedness
+  is not an artifact of how much you retrieve; a steady ~quarter of errors are ill-posed at every depth.
 - **Ill-posedness tracks reasoning structure (Fig 11; `run_structure.py`):** comparison-type questions
   are far more ill-posed than single-chain ones — HotpotQA **comparison 57%** [43,70] vs **bridge 34%**
   [30,37] (disjoint CIs); 2Wiki **bridge_comparison 55%** [47,62] vs **inference 28%** [22,34].
