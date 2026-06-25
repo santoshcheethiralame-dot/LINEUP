@@ -178,5 +178,7 @@ Artifacts: `results_tables.md` (Tables 1–3), `results_ci.md` (no-culprit CIs),
 ## Limitations (state these to preempt reviewers)
 - 7B-class open models only (frontier GPT-4o/Claude is future work / optional slice).
 - Two datasets, both Wikipedia-based multi-hop QA; ~70–220 wrong cases per cell.
-- ContextCite depends on the ablation count (sensitivity check is future work).
+- ContextCite's ablation count: **checked** (`run_ablation.py`, Fig 15) — top-1 is stable for N≥16
+  (0.92–0.94) and the default 32 is in the stable regime; only N=8 degrades it (0.84). Not an open
+  limitation anymore (state as a robustness result, not a caveat).
 - Human sample is weighted toward annotator-familiar topics (convenience sample, disclosed).
