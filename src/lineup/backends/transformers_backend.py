@@ -42,6 +42,7 @@ class TransformersModel(LanguageModel):
         dtype: str = "bfloat16",
         max_new_tokens: int = 256,
         load_in_4bit: bool = False,
+        device_map: str | None = None,
     ):
         self.model_name = model_name
         self.device = device or ("cuda" if torch.cuda.is_available() else "cpu")
@@ -62,6 +63,15 @@ class TransformersModel(LanguageModel):
             # materialize shards in fp16 during dispatch and overflow a T4's memory.
             self.model = AutoModelForCausalLM.from_pretrained(
                 model_name, quantization_config=quantization, device_map={"": 0}
+            )
+            self.device = self.model.get_input_embeddings().weight.device
+        elif device_map is not None:
+            # Shard an unquantized model across all visible GPUs (e.g. two T4s) so a 7B in
+            # fp16/bf16 -- ~15GB, too big for one 16GB card with room to generate -- fits. The
+            # 4-bit caveat above does not apply: there is no nf4 dispatch, accelerate simply
+            # places fp16 shards, and inputs go to whichever device holds the embeddings.
+            self.model = AutoModelForCausalLM.from_pretrained(
+                model_name, torch_dtype=_resolve_dtype(dtype, "cuda"), device_map=device_map
             )
             self.device = self.model.get_input_embeddings().weight.device
         else:

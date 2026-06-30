@@ -125,6 +125,8 @@ def main() -> None:
     parser.add_argument("--model", default=DEFAULT_MODEL)
     parser.add_argument("--limit", type=int, default=60, help="wrong cases per cell (0 = all)")
     parser.add_argument("--max-new-tokens", type=int, default=256, help="match the 4-bit run's budget (backend default)")
+    parser.add_argument("--dtype", default="float16", help="full-precision reference dtype (fp16 = the 4-bit compute dtype, T4-native)")
+    parser.add_argument("--device-map", default=None, help="'auto' shards the fp16 model across all visible GPUs (e.g. two T4s)")
     parser.add_argument("--seed", type=int, default=0)
     parser.add_argument("--no-judge", action="store_true", help="match the original run's judge setting")
     parser.add_argument("--full", action="store_true", help="label every chunk (full oracle), not just salient chunks")
@@ -135,7 +137,10 @@ def main() -> None:
     from lineup.backends import TransformersModel
     from lineup.correctness import LLMJudge
 
-    model = TransformersModel(args.model, max_new_tokens=args.max_new_tokens, load_in_4bit=False)
+    model = TransformersModel(
+        args.model, dtype=args.dtype, max_new_tokens=args.max_new_tokens,
+        load_in_4bit=False, device_map=args.device_map,
+    )
     judge = None if args.no_judge else LLMJudge(model)
 
     tot = {"n_both": 0, "nc_4bit": 0, "nc_fp16": 0, "agree": 0, "wrong": 0, "sel": 0}
