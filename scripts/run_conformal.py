@@ -9,7 +9,7 @@ import matplotlib
 matplotlib.use("Agg")
 import matplotlib.pyplot as plt
 
-from lineup.conformal import build_ranks, calibrate_tau, coverage_and_size, top1_coverage
+from lineup.conformal import build_ranks, build_ranks_set, calibrate_tau, coverage_and_size, top1_coverage
 from lineup.data.serialization import read_predictions, read_roles
 
 ROOT = Path(__file__).resolve().parent.parent
@@ -20,7 +20,7 @@ CONDITIONS = ["baseline", "hardtraps"]
 MODELS = ["qwen", "phi", "mistral"]
 
 
-def load_items():
+def load_items(builder):
     items = []
     for dataset in DATASETS:
         for condition in CONDITIONS:
@@ -31,7 +31,7 @@ def load_items():
                 roles = read_roles(cell / "roles.jsonl")
                 wrong = [case for case in roles if not case.original_correct]
                 preds = read_predictions(cell / "predictions.jsonl")
-                items += build_ranks(wrong, preds, source=f"{dataset}/{condition}/{model}", condition=condition)
+                items += builder(wrong, preds, source=f"{dataset}/{condition}/{model}", condition=condition)
     return items
 
 
@@ -44,7 +44,7 @@ def split(items):
 
 
 def main():
-    items = load_items()
+    items = load_items(build_ranks)
     cal, test = split(items)
     alpha = 0.1
     tau = calibrate_tau(cal, alpha)
@@ -64,6 +64,17 @@ def main():
         tau_c = calibrate_tau(cal_c, alpha)
         cov_c, size_c = coverage_and_size(test_c, tau_c)
         print(f"  {condition:9s} tau={tau_c}  test coverage {cov_c:.2f}  (avg size {size_c:.1f})")
+
+    # The number above is only the well-posed single-culprit subset. The honest claim covers the
+    # responsible set across every case with a causal passage (over-determined and silent included);
+    # no-single-cause coalitions have no causal passage to rank and are handled by abstention.
+    print("\nresponsible-set coverage across all cases with a causal passage (not just single-culprit):")
+    for mode, label in [("any", "set contains a responsible passage"), ("all", "set contains the whole responsible set")]:
+        sitems = load_items(lambda w, p, **k: build_ranks_set(w, p, mode=mode, **k))
+        scal, stest = split(sitems)
+        stau = calibrate_tau(scal, alpha)
+        scov, ssize = coverage_and_size(stest, stau)
+        print(f"  {label:38s} n={len(sitems):4d}  tau={stau}  coverage {scov:.2f}  (avg size {ssize:.1f})")
 
     # coverage vs set size as alpha sweeps: the conformal trade-off, with top-1 marked
     sizes, covers = [], []

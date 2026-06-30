@@ -20,10 +20,36 @@ Artifacts: `results_tables.md` (Tables 1–3), `results_ci.md` (no-culprit CIs),
   **AUROC 0.90** (0.92 on salient chunks); median Δ **3.09 nats** causal vs **0.00** non-causal. A
   tunable rule (causal := Δ > T) is threshold-sensitive, but at the natural band T=0.5–1 it
   reproduces the discrete no-culprit rate (**35–39%** vs the shipped **37%**).
-- **Taxonomy of no-culprit cases (n=649):** built on the reliable causal axis — **coalition (≥2
-  chunks each flip the answer) 54%**, no single cause (none flips alone) 30%, one silent driver
-  16%. So **~84% are redundant/distributed causation** — there is no single passage to name because
-  there are several (or none singly). Directly explains the headline.
+- **Taxonomy of no-culprit cases (n=649):** built on the reliable causal axis, split by mechanism —
+  **over-determination (≥2 chunks each *independently* flip the answer; several sufficient causes,
+  none singly the culprit) 54%**, redundant coalition (no chunk flips the answer alone; only joint
+  removal does — the synergy single leave-one-out is blind to, confirmed directly by the leave-two-out
+  probe `run_coalition_proof.py`) 30%, one silent driver (a lone causal non-salient passage) 16%. So
+  **~84% are distributed causation** — no single passage to name because there are several
+  (over-determination) or because no one removal suffices (redundant coalition). "Coalition" denotes
+  the redundant, joint-only case specifically; the leave-two-out probe separates it from
+  over-determination. Directly explains the headline.
+- **Leave-two-out coalition proof — confirmed on GPU (`run_coalition_proof.py`, Kaggle/Qwen):** on the
+  no-single-cause slice (hard-traps), **66% (43/65)** have a pair whose joint removal flips the answer
+  though neither passage alone does — **69%** HotpotQA, **63%** 2Wiki. This *demonstrates* the redundant
+  coalition by direct ablation rather than inferring it from the absence of a single cause, closing the
+  circularity objection (Reviewer 2's "tautology"). The remaining ~34% may need 3+-way removal or be
+  noise — stated honestly, not claimed as pairwise coalitions.
+  - **Honest breakdown of the 43 synergy pairs (hard-traps):** 44% are the two *planted* distractors
+    (misleading+decoy) removed together — this confirms the construction makes genuine LOO-blind
+    coalitions, but is not organic; 30% are one planted + one real; **26% are between un-planted
+    passages (organic redundancy)**. For the reviewer-proof, purely-organic number, run the **baseline**
+    cells (only one near-miss planted, so a planted *pair* cannot form — every synergy is misleading+real
+    or real+real). Report the baseline organic rate as the headline coalition proof; the hard-traps 66%
+    validates the construction.
+- **Silent passages are causal, not instability (`run_silent_examples.py`):** removing a silent passage
+  shifts the answer log-probability about as much as removing a culprit (median |Δ| **2.34 vs 6.11**;
+  only **13%** below the 0.5 jitter range), and the oracle's value-based comparison already excludes
+  rephrase-only flips. Honest caveat: the silent *share* is salience-matcher-sensitive — some silent
+  labels are near-misses where the passage states the wrong value in a variant form (abbreviation,
+  en-dash) — so report it under the strict matcher too. The clean bridge cases survive: a distractor
+  about a *different* entity drives the wrong hop (e.g. a Bronx-born musician pulls a birthplace answer
+  to "Bronx" instead of the gold "Queens"; removing it restores the gold).
 - **Salience-axis sensitivity — honest (`run_salience_sensitivity.py`):** the causal axis is threshold-free,
   but the *salience* axis is a soft text-match, so we stress it: pooled no-culprit is **43%** (strict,
   answer verbatim), **37%** (shipped phrase-match), **19%** (loose token-overlap, over-generous). The rate
@@ -36,6 +62,11 @@ Artifacts: `results_tables.md` (Tables 1–3), `results_ci.md` (no-culprit CIs),
 - **Evidence:** Table 1; **Fig 3**.
 - **Numbers:** ContextCite top-1 **0.70–0.92**, SingleChunk 0.62–0.95, LLM-judge 0.58–0.76,
   Lexical **0.22–0.57**. Effect-based beats lexical in **all 12** settings.
+- **CRITICAL caption (Table 1):** these are measured **only on the wrong cases that contain a single
+  culprit** — localization *given* a culprit, not overall accuracy. Across **all** organic errors
+  (including the 27–53% with no culprit), top-1 attribution is correct on only **0.26–0.37**. Always
+  caption Table 1 with the subset and pair it with the all-errors number, so 0.70–0.92 is never read
+  as overall performance — otherwise the §C remedy looks unmotivated beside a "0.92" in Table 1.
 - **Errors are salience-shaped — for the causal methods (`run_error_direction.py`):** on the well-posed
   cases a method gets wrong, the misfire lands on the planted salient red-herring far above chance —
   single_chunk **2.8×**, ContextCite **2.5×**, llm_judge **2.4×** — but lexical only **1.1×** (its
@@ -82,6 +113,10 @@ Artifacts: `results_tables.md` (Tables 1–3), `results_ci.md` (no-culprit CIs),
   the effect-set recovers ~2× more. → use set-valued attribution.
 - **Evidence:** **Fig 2**; Table 2 (recall@1 vs recall@k).
 - **Numbers:** all **6** hard-traps cells: recall@1 **0.26–0.37** → recall@k **0.57–0.75** (~2×).
+- **recall@k disclosure (honest):** recall@k is measured at **k = |R|**, the oracle's responsible-set
+  size — an *upper bound* that assumes the set size is known at test time. It quantifies what a
+  correctly-sized set could recover, not a deployable number; the abstention margin and the conformal
+  set are what supply the size *without* the oracle (C2/C3). State this wherever recall@k appears.
 - **Dose-response (Fig 7; 0/1/2/3 redundant decoys, HotpotQA/qwen):** as redundancy grows, recall@1
   (single pick) decays monotonically **0.36 → 0.27 → 0.24 → 0.18** (tracking the top-1 ≤ 1/m bound)
   while recall@k (set) holds/grows **0.36 → 0.59 → 0.74 → 0.73**, and the no-culprit rate climbs
@@ -131,6 +166,11 @@ Artifacts: `results_tables.md` (Tables 1–3), `results_ci.md` (no-culprit CIs),
   obvious "why not just top-k?" question. (Caveat: fixed top-2 still holds at 0.93 under redundancy,
   so the τ=2→3 growth is a *safer margin*, not a rescue from catastrophic failure; an adaptive APS
   variant bloats on diffuse effect scores and is dropped as a negative result.)
+- **Shift check (`run_conformal_transfer.py`):** a top-2 calibrated on one dataset/condition still
+  clears 0.90 when transferred to another (hotpotqa↔2wiki and baseline→hard-traps all ≥0.92), so the
+  fixed heuristic is robust here too — we do **not** manufacture a shift that breaks it. This confirms
+  the contribution is the distribution-free guarantee plus the self-reporting set size (τ rises 2→3
+  under redundancy, and to the full context for whole-coalition coverage), not an empirical win.
 
 ## Qualitative (Fig/Table in the appendix or main)
 - **Evidence:** `examples.md` — a clean culprit (ContextCite succeeds), a coalition (no single
@@ -159,20 +199,71 @@ Artifacts: `results_tables.md` (Tables 1–3), `results_ci.md` (no-culprit CIs),
 ## Validation — the oracle's labels match human judgement (Table 3)
 - **Claim:** independent humans pick the oracle's culprit at/above the rate they agree with each
   other, and the residual gap is the single-culprit bias itself.
+- **Two-stage design (pilot → confirmatory) — disclose both, lead with the confirmatory:** the 50
+  below were a *pilot* on an initial rubric (disagreement concentrated on the no-culprit/salience
+  boundary). We then refined the rubric (an explicit deletion test — *would removing one passage fix
+  the answer?* — plus salience-vs-cause guidance) and ran a *confirmatory* round on **30 fresh,
+  disjoint cases**. The improvement is consistent with a learnable construct, **not** post-hoc
+  selection — which is exactly why we report both rather than dropping the pilot.
+- **Confirmatory round (N=30, `round30_picks.csv` → `score_round30.py`):** the two annotators agree
+  with the oracle **70% / 80%** (Cohen's κ **0.63 / 0.75**), **at/above** inter-rater κ **0.59** and
+  far above ~14% chance on a 7-way pick; no-culprit agreement rose to **6/8**. These are *blind*
+  (annotated before any oracle reveal), so the κ headline needs no adjudication. **Adjudicated floor
+  (`score_round30.py`): oracle correct on 26/30 = 87%** (0 ambiguous), with **4 errors** — r004, r005,
+  r009, r014. **3 of the 4 (r005, r009, r014) are the oracle naming a single culprit where the
+  adjudicators judged 'none'** — the counterfactual-vs-intuitive gap, on the same no-single-culprit
+  boundary as the pilot. The team marked the oracle wrong on 4 cases (3 after seeing its pick), so the
+  floor is conservative, not rubber-stamped. Two cases (**r017, r028**) reproduce the thesis live: both
+  annotators forced a single pick where the oracle correctly abstained ('none'). **Caveat:** the clash
+  adjudication was not fully blinded (oracle picks shown in an earlier exchange); the κ 0.63/0.75
+  headline is pre-reveal and unaffected.
 - **Evidence:** 50 blind cases, 2 reliable annotators (Rushi excluded — 20%, GPT-assisted noise);
   `review_key.csv`; the adjudication study.
 - **Numbers:** Santosh↔oracle **66%**, Nivas 48%; inter-rater **60%** — so the oracle sits *at/above*
   the human ceiling, vs ~14% chance on a 7-way choice. Agreement splits sharply: culprit cases
   **80% / 63%** vs no-culprit cases **33% / 13%** — humans force a pick when there is none, yet are
   **100% / 67% precise** when they do say "none."
-- **Adjudication (team's discussed verdicts as ground truth):** taking the team-adjudicated answer as
-  truth, the oracle is correct on **37/50**, **wrong on 4 (8%)**, ambiguous/unsure on 9 → accuracy
-  **90%** on the 41 resolvable cases (74% floor if every unsure counts against it). The 4 errors:
+- **Chance-corrected (`run_validation_kappa.py`):** raw agreement overstates a 7-way pick, so report
+  Cohen's/Fleiss' κ. On the 25 contested cases Cohen's κ is **0.22** (Santosh↔Nivas) / **0.25**
+  (Santosh↔oracle) — low by construction, since those are the disagreements; run the script over all
+  50 cases, and over all three sheets *pre-exclusion*, for the headline Fleiss κ. Rushi's ~20% (near
+  the ~14% chance floor) is why he is excluded, disclosed rather than hidden.
+- **Adjudication (team's discussed verdicts as ground truth) — lead with the floor:** taking the
+  team-adjudicated answer as truth, the oracle is correct on **37/50 = 74% of all cases (the honest
+  floor, counting every one of the 9 ambiguous against it)**; setting aside only the 9 genuinely
+  ambiguous, it is **90%** on the 41 resolvable cases, **wrong on 4 (8%)**. The 4 errors:
   r019 (E→A), r022/r030/r042 (none→a salient passage) — **3 of 4 are NONE-vs-salient boundary calls**,
   the one genuinely fuzzy axis. Disagreements remain concentrated on no-culprit cases (humans force a
   pick), so the study validates the oracle and reproduces the single-culprit bias.
 - **Caveats:** convenience sample (annotator-familiar topics); the team are not expert annotators
   (verdicts weighted by the discussion notes). Numbers from the team adjudication sheet + `review_key.csv`.
+
+## Validation (construction) — the oracle recovers the planted causal structure (no humans, no LLM)
+- **Claim:** the oracle's ablation-derived labels recover the *designed* causal structure on synthetic
+  cases — a validity check whose ground truth is the data generator, not the oracle's own signal and
+  **not an LLM judge** (which the paper argues is unreliable, so cannot serve as a validator). Pairs
+  with the human study (Table 3): humans anchor the *intuitive* culprit notion, this anchors *designed*
+  ground truth with nobody in the loop.
+- **Evidence:** `scripts/validate_construction.py` over all 12 cells' `roles.jsonl`; `provenance`
+  (gold/misleading/decoy/distractor) vs oracle `causal`/`salient`/`role`, wrong cases only (the oracle
+  labels only errors). Artifact `paper/construction_validation.md`. Rates carry 95% Wilson intervals.
+- **Recovery:** planted misleading/decoy passages carry the salient roles (culprit+misleading)
+  **53% / 64%** vs **5%** of distractors; gold (ignored on errors) is **76% inert/silent**. The oracle
+  reconstructs which passages hold the wrong value without ever seeing provenance.
+- **Specificity / why the 2×2 is not redundant:** a distractor is *causal* **32%** of the time
+  (removing any passage perturbs an already-wrong model) but *salient* only **5%**, so the *culprit*
+  label (needs both) lands on filler just **7%**. Causal-alone would blame a third of the filler; the
+  salience gate brings it to single digits — direct evidence the second axis does real filtering work.
+- **Manipulation check (the strong, significant signal):** hard-traps swaps one distractor for a decoy
+  asserting the *same* wrong value (context fixed at 6 — a swap, not an extra passage). Conditioned on
+  the bait taken, the misleading chunk's individual-causal rate drops **58% → 40%** (Wilson intervals
+  non-overlapping; n=281 baseline / 647 hard-traps) — a second sufficient cause strips the first of its
+  individual necessity, registered from ablation alone against a structure change the oracle was never
+  told about.
+- **Reported honestly, not overstated:** the no-single-cause rate rises only **14% → 17%** (within
+  noise): the planted redundancy mostly surfaces as **over-determination** — causality shifts onto the
+  decoy (itself culprit **43%** vs the misleading chunk's **24%**) — rather than a leave-one-out-blind
+  coalition. We lead with the significant individual-necessity drop, not the no-single count.
 
 ## Appendix depth checks (`run_extra_analyses.py`) — keep in the appendix, not the main body
 - **Position:** ContextCite top-1 is flat across context position (early 0.81 / middle 0.77 / late 0.81;

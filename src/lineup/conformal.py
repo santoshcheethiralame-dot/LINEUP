@@ -5,12 +5,17 @@ from dataclasses import dataclass
 
 from .data.schema import CaseRoles, MethodPrediction
 
-# Split-conformal prediction sets for attribution. The label we cover is the single culprit, so we
-# restrict to well-posed cases (exactly one culprit). The nonconformity score is the rank of the
-# culprit in the effect ranking; calibrating a rank threshold tau yields a top-tau set that
-# contains the culprit with probability >= 1 - alpha (marginal, on exchangeable data). It is
-# scale-free, so effect scores from different models pool cleanly. Reporting the tau needed per
-# condition shows how much larger attribution sets must be under redundancy for the same coverage.
+# Split-conformal prediction sets for attribution. Two coverage targets share the same machinery.
+# The well-posed target is the single culprit (exactly one causal-and-salient passage); the
+# nonconformity score is the culprit's rank in the effect ranking. The general target is the
+# responsible set -- every individually-causal passage -- covered either in part (mode 'any', best
+# rank) or in full (mode 'all', worst rank), which carries the guarantee past the single-culprit
+# subset to the over-determined and silent-driver cases. Cases with no causal passage at all (the
+# no-single-cause coalitions) cannot be placed by single-removal ranking and are left to abstention.
+# Calibrating a rank threshold tau yields a top-tau set covering the target with probability
+# >= 1 - alpha (marginal, on exchangeable data). The score is scale-free, so effect scores from
+# different models pool cleanly; the tau needed per condition shows how the set must grow under
+# redundancy for the same coverage.
 
 
 @dataclass
@@ -69,3 +74,39 @@ def top1_coverage(test: list[RankItem]) -> float | None:
     if not test:
         return None
     return sum(1 for item in test if item.rank == 1) / len(test)
+
+
+def responsible_ids(case) -> list:
+    """The passages a correct attribution must cover: every chunk individually causal to the error.
+    For a single-culprit case this is the culprit alone; for over-determined and silent-driver cases
+    it is the whole causal set. The no-single-cause coalitions have an empty set here — single-removal
+    ranking cannot place them, so they fall to the abstention path rather than the conformal set."""
+    return [role.chunk_id for role in case.chunk_roles if role.causal]
+
+
+def build_ranks_set(cases, predictions, *, method: str = "contextcite", mode: str = "any", source: str = "", condition: str = "") -> list[RankItem]:
+    """Ranks for covering the responsible *set*, not only a single culprit.
+
+    mode 'any' covers at least one responsible passage (nonconformity = best rank); mode 'all' covers
+    the entire responsible set (nonconformity = worst rank), the honest target when blame is shared.
+    Cases with no causal passage are skipped (responsible_ids), as are cases where a responsible
+    passage never appears in the method's ranking.
+    """
+    by_qid = {case.qid: case for case in cases}
+    items = []
+    for prediction in predictions:
+        if prediction.method != method:
+            continue
+        case = by_qid.get(prediction.qid)
+        if case is None:
+            continue
+        responsible = responsible_ids(case)
+        if not responsible:
+            continue
+        ranked = _ranked(prediction)
+        ranks = [ranked.index(cid) + 1 for cid in responsible if cid in ranked]
+        if len(ranks) != len(responsible):
+            continue
+        rank = max(ranks) if mode == "all" else min(ranks)
+        items.append(RankItem(f"{source}/{prediction.qid}", condition, rank, len(ranked)))
+    return items
