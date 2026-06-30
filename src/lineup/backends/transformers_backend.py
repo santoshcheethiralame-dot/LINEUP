@@ -67,11 +67,18 @@ class TransformersModel(LanguageModel):
             self.device = self.model.get_input_embeddings().weight.device
         elif device_map is not None:
             # Shard an unquantized model across all visible GPUs (e.g. two T4s) so a 7B in
-            # fp16/bf16 -- ~15GB, too big for one 16GB card with room to generate -- fits. The
-            # 4-bit caveat above does not apply: there is no nf4 dispatch, accelerate simply
-            # places fp16 shards, and inputs go to whichever device holds the embeddings.
+            # fp16 -- ~15GB, too big for one 16GB card with room to generate -- fits. The 4-bit
+            # caveat above does not apply: no nf4 dispatch, accelerate just places fp16 shards,
+            # and inputs go to whichever device holds the embeddings. Cap each card below its
+            # full size so the loader balances the shards and leaves room for the KV cache,
+            # rather than filling the first GPU and OOM-ing on the forward pass.
+            n_gpus = torch.cuda.device_count()
+            max_memory = {i: "11GiB" for i in range(n_gpus)} if n_gpus > 1 else None
             self.model = AutoModelForCausalLM.from_pretrained(
-                model_name, torch_dtype=_resolve_dtype(dtype, "cuda"), device_map=device_map
+                model_name,
+                torch_dtype=_resolve_dtype(dtype, "cuda"),
+                device_map=device_map,
+                max_memory=max_memory,
             )
             self.device = self.model.get_input_embeddings().weight.device
         else:
