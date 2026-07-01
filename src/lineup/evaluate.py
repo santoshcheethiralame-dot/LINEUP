@@ -24,7 +24,7 @@ from .scoring import score_predictions
 from .setvalued import attribution_recovery
 
 LEADERBOARD_COLUMNS = (
-    ("top1_culprit_accuracy", "top-1 culprit acc"),
+    ("top1_culprit_accuracy", "culprit acc (well-posed)"),
     ("recall_at_1", "recall@1"),
     ("recall_at_k", "recall@k"),
     ("reliability_auroc", "reliability AUROC"),
@@ -104,8 +104,8 @@ def evaluate(cases: Iterable[CaseRoles], predictions: Iterable[MethodPrediction]
 def leaderboard_markdown(scores: Iterable[MethodScore], no_culprit: float | None = None) -> str:
     """Render scores as a markdown leaderboard table."""
     scores = list(scores)
-    header = "| method | " + " | ".join(label for _, label in LEADERBOARD_COLUMNS) + " | n |"
-    rule = "|---|" + "---:|" * (len(LEADERBOARD_COLUMNS) + 1)
+    header = "| method | " + " | ".join(label for _, label in LEADERBOARD_COLUMNS) + " | n well-posed | n wrong |"
+    rule = "|---|" + "---:|" * (len(LEADERBOARD_COLUMNS) + 2)
 
     def fmt(x):
         return "--" if x is None else f"{x:.2f}"
@@ -113,7 +113,7 @@ def leaderboard_markdown(scores: Iterable[MethodScore], no_culprit: float | None
     lines = [header, rule]
     for s in scores:
         cells = " | ".join(fmt(getattr(s, attr)) for attr, _ in LEADERBOARD_COLUMNS)
-        lines.append(f"| {s.method} | {cells} | {s.n_wrong} |")
+        lines.append(f"| {s.method} | {cells} | {s.n_with_culprit} | {s.n_wrong} |")
     out = "\n".join(lines)
     if no_culprit is not None:
         out += (

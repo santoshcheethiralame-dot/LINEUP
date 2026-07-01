@@ -34,8 +34,10 @@ def main():
     OUT.write_text(
         "# LINEUP leaderboard\n\n"
         "Headline metrics for each attribution method, pooled across all 12 cells "
-        "(3 model families x 2 datasets x 2 conditions), wrong cases only. "
-        "recall@1 is the single-pick ceiling; recall@k is the set. Regenerate with "
+        "(3 model families x 2 datasets x 2 conditions), wrong cases only. Denominators differ "
+        "by column: culprit acc is localization *given* a single culprit exists (the well-posed "
+        "subset, not all errors); recall@1 vs recall@k is coverage of the planted responsible set "
+        "-- the single-pick ceiling vs the set. Regenerate with "
         "`python scripts/build_leaderboard.py`; add your own method via `lineup.evaluate.evaluate`.\n\n"
         + md
         + "\n",
