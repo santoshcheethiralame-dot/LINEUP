@@ -3,6 +3,7 @@ from pathlib import Path
 
 from lineup.config import DEFAULT_MODEL, DEFAULT_SEED, OUTPUT_DIR, set_seed
 from lineup.correctness import LLMJudge
+from lineup.data.coalition import ChainSplitScenarioBuilder, from_recipe, write_designed
 from lineup.data.sources import load_examples
 from lineup.data.scenario import ScenarioBuilder
 from lineup.data.schema import CaseRoles
@@ -27,6 +28,10 @@ def main() -> None:
     parser.add_argument("--split", default="validation")
     parser.add_argument("--dataset", default="hotpotqa", help="source dataset: hotpotqa or 2wiki")
     parser.add_argument("--hard-traps", action="store_true", help="add a salient red-herring decoy per case")
+    parser.add_argument(
+        "--chain-split", action="store_true",
+        help="plant an and-pair (fabricated bridge + wrong value) instead of the or near-miss",
+    )
     parser.add_argument("--model", default=DEFAULT_MODEL)
     parser.add_argument("--seed", type=int, default=DEFAULT_SEED)
     parser.add_argument("--max-new-tokens", type=int, default=24)
@@ -42,18 +47,32 @@ def main() -> None:
         args.model, max_new_tokens=args.max_new_tokens, load_in_4bit=args.load_in_4bit
     )
 
+    if args.chain_split and args.hard_traps:
+        raise SystemExit("--chain-split and --hard-traps are separate constructions; pick one")
+
     examples = list(load_examples(args.dataset, args.split, limit=args.limit))
     pool = build_answer_pool(examples)
-    builder = ScenarioBuilder(answer_pool=pool, k=args.k, seed=args.seed, hard_traps=args.hard_traps)
+    if args.chain_split:
+        builder = ChainSplitScenarioBuilder(answer_pool=pool, k=args.k, seed=args.seed)
+    else:
+        builder = ScenarioBuilder(answer_pool=pool, k=args.k, seed=args.seed, hard_traps=args.hard_traps)
     judge = LLMJudge(model)
 
-    scenarios, generations = [], []
+    scenarios, generations, designed = [], [], []
     skipped = 0
     for example in examples:
-        scenario = builder.build(example)   # returns None when the example cannot carry a near-miss
-        if scenario is None:
+        built = builder.build(example)   # returns None when the example cannot carry the construction
+        if built is None:
             skipped += 1
             continue
+        if args.chain_split:
+            scenario, planted = built
+            designed.append(planted)
+        else:
+            scenario = built
+            planted = from_recipe(scenario)
+            if planted is not None:
+                designed.append(planted)
         scenarios.append(scenario)
         generations.append(generate_and_judge(model, scenario, llm_judge=judge))
     print(f"built {len(scenarios)} cases, skipped {skipped} of {len(examples)} as unbuildable")
@@ -90,6 +109,8 @@ def main() -> None:
     write_generations(args.out / "generations.jsonl", generations)
     write_roles(args.out / "roles.jsonl", role_cases)
     write_predictions(args.out / "predictions.jsonl", predictions)
+    if designed:
+        write_designed(args.out / "designed.jsonl", designed)
 
     wrong = [case for case in role_cases if not case.original_correct]
     print(f"cases: {len(scenarios)}  wrong: {len(wrong)}  predictions: {len(predictions)}")
