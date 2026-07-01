@@ -76,6 +76,8 @@ def process(model, d: Path, judge, args) -> dict:
         nc_greedy += int(nc_g)
         nc_sample += int(nc_s)
         agree += int(nc_g == nc_s)
+        if torch.cuda.is_available():
+            torch.cuda.empty_cache()
 
     cell = d.as_posix().split("results_data/")[-1]
     pct = lambda a, b: 100 * a / b if b else 0.0

@@ -61,8 +61,9 @@ def passage_attention(model, tok, question, chunks, device, max_new_tokens, max_
     answer_ids = gen[0, input_ids.shape[1]:]
     answer = tok.decode(answer_ids, skip_special_tokens=True).strip()
 
-    out = model(gen[:, : input_ids.shape[1] + answer_ids.shape[0]], output_attentions=True)
-    a0, seq = input_ids.shape[1], gen.shape[1]
+    seq = input_ids.shape[1] + answer_ids.shape[0]
+    a0 = input_ids.shape[1]
+    out = model(gen[:, :seq], output_attentions=True)
     cols = {j: [t for t in range(a0) if tokpass[t] == j] for j in range(len(chunks))}
     mass = torch.zeros(len(chunks))
     for att in out.attentions:                      # [1, heads, seq, seq] per layer
@@ -71,6 +72,9 @@ def passage_attention(model, tok, question, chunks, device, max_new_tokens, max_
             if cidx:
                 mass[j] += recv[cidx].sum().item()
     mass /= len(out.attentions)
+    del out                                          # free the attention tensors immediately
+    if torch.cuda.is_available():
+        torch.cuda.empty_cache()
     return mass.tolist(), answer
 
 
@@ -121,7 +125,7 @@ def main() -> None:
     p.add_argument("--model", default=DEFAULT_MODEL)
     p.add_argument("--limit", type=int, default=40)
     p.add_argument("--max-new-tokens", type=int, default=32)
-    p.add_argument("--max-prompt", type=int, default=2048, help="skip cases whose prompt exceeds this (attention memory)")
+    p.add_argument("--max-prompt", type=int, default=1400, help="skip cases whose prompt exceeds this (attention memory on one T4)")
     p.add_argument("--seed", type=int, default=0)
     args = p.parse_args()
 
