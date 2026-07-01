@@ -50,6 +50,14 @@ Artifacts: `results_tables.md` (Tables 1–3), `results_ci.md` (no-culprit CIs),
   en-dash) — so report it under the strict matcher too. The clean bridge cases survive: a distractor
   about a *different* entity drives the wrong hop (e.g. a Bronx-born musician pulls a birthplace answer
   to "Bronx" instead of the gold "Queens"; removing it restores the gold).
+- **Position-controlled ablation (`run_position_control.py`; matched Qwen subsample, 240 cases):**
+  deletion shifts every later passage one slot earlier, so a position-sensitive model could flip for
+  a positional (not content) reason. Re-running the causal test with **length-matched masking** (the
+  passage stays in its slot, content replaced by equal-length filler) reproduces deletion: no-culprit
+  **31% vs 32%**, per-case label agreement **96%**, ContextCite culprit-accuracy 90% vs 88%. The
+  causal axis is a property of passage *content*, not position. Caveat (one cell): HotpotQA/hard-traps
+  CC accuracy drops 89→77% under masking while no-culprit is identical (42/42) — *localization*
+  inherits some position sensitivity; the headline does not.
 - **Salience-axis sensitivity — honest (`run_salience_sensitivity.py`):** the causal axis is threshold-free,
   but the *salience* axis is a soft text-match, so we stress it: pooled no-culprit is **43%** (strict,
   answer verbatim), **37%** (shipped phrase-match), **19%** (loose token-overlap, over-generous). The rate
@@ -101,6 +109,11 @@ Artifacts: `results_tables.md` (Tables 1–3), `results_ci.md` (no-culprit CIs),
   ContextCite top-1 **0.88/0.89**. MuSiQue is markedly harder (error rate **57–58%** vs ~25–30%), yet the
   ill-posed *fraction* sits in the same band — ill-posedness is a property of multi-hop RAG error, not of
   one dataset.
+- **Quantization sanity (`run_fp16_sanity.py`; Kaggle 2×T4):** the full generate→LOO pipeline re-run
+  in **fp16** on a matched Qwen subsample (60 wrong@4bit cases × 4 cells; scored on the 200 cases
+  wrong under *both* precisions): no-single-culprit **32% (4-bit) vs 31% (fp16)**, per-case
+  culprit/no-culprit agreement **88%**, hard-traps cells tightest (46/46, 28/23). The headline is
+  **not a quantization artifact**.
 - **Ill-posedness tracks reasoning structure (Fig 11; `run_structure.py`):** comparison-type questions
   are far more ill-posed than single-chain ones — HotpotQA **comparison 57%** [43,70] vs **bridge 34%**
   [30,37] (disjoint CIs); 2Wiki **bridge_comparison 55%** [47,62] vs **inference 28%** [22,34].
@@ -135,6 +148,15 @@ Artifacts: `results_tables.md` (Tables 1–3), `results_ci.md` (no-culprit CIs),
   0.48** for a set (~5×). The wrong-primitive is therefore NOT a construction artifact — organic
   redundancy is common and a single pick structurally cannot cover it. Pre-empts "you engineered the
   redundancy."
+
+- **Oracle-supervised learned baseline (`compute_learned_baseline.py`, local):** a gradient-boosted
+  ranker over all four methods' per-chunk scores + structure (position, retrieval score), trained on
+  the oracle culprit labels (question-grouped 5-fold CV) — an upper bound no deployable method gets,
+  since it trains on the answer key. Well-posed culprit accuracy **0.848** vs ContextCite 0.825
+  (+2.2pt, near-saturated); on coalitions (|R|≥2, n=1033) recall@1 **0.299** — no better than
+  SingleChunk's 0.316 and far under the **1/m = 0.50** structural bound. Which of m redundant chunks
+  to name is not a property of any one chunk, so no per-chunk feature — learned or hand-built —
+  carries it. The limit is the single-passage primitive, not method strength.
 
 ## C2 — REMEDY: calibrated selective attribution (the method we build)
 - **Claim:** a calibrated confidence signal lets attribution **abstain** when no single culprit is

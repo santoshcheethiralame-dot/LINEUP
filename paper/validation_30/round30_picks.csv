@@ -1,0 +1,31 @@
+﻿row_id,reviewer1,reviewer2,reason
+r000,NONE,NONE,
+r001,F,F,
+r002,D,D,
+r003,D,D,
+r004,C,F,
+r005,F,NONE,"confused, the question didnt even mention about nebo right?"
+r006,E,E,
+r007,A,A,
+r008,B,D,"both had the same mention, but d says "" its well documented"""
+r009,NONE,NONE,
+r010,A,E,"both options had the mention but e says ""its well documented"""
+r011,D,D,
+r012,A,A,
+r013,E,E,
+r014,NONE,C,"its no where given - where he died, but the only mention of bombay was in chunk C"
+r015,NONE,NONE,
+r016,NONE,NONE,
+r017,D,F,"it gave the date instead of place, and those two chunks were the ones with that date"
+r018,NONE,NONE,
+r019,D,D,
+r020,A,F,
+r021,NONE,NONE,
+r022,D,E,
+r023,C,C,
+r024,E,E,
+r025,B,B,
+r026,D,C,
+r027,NONE,NONE,
+r028,D,E,
+r029,D,D,
