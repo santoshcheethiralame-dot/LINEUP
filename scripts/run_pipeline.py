@@ -32,6 +32,10 @@ def main() -> None:
         "--chain-split", action="store_true",
         help="plant an and-pair (fabricated bridge + wrong value) instead of the or near-miss",
     )
+    parser.add_argument(
+        "--natural", action="store_true",
+        help="plant nothing: gold plus the dataset's own distractors, for organic errors",
+    )
     parser.add_argument("--model", default=DEFAULT_MODEL)
     parser.add_argument("--seed", type=int, default=DEFAULT_SEED)
     parser.add_argument("--max-new-tokens", type=int, default=24)
@@ -47,15 +51,17 @@ def main() -> None:
         args.model, max_new_tokens=args.max_new_tokens, load_in_4bit=args.load_in_4bit
     )
 
-    if args.chain_split and args.hard_traps:
-        raise SystemExit("--chain-split and --hard-traps are separate constructions; pick one")
+    if sum((args.chain_split, args.hard_traps, args.natural)) > 1:
+        raise SystemExit("--chain-split, --hard-traps, and --natural are separate settings; pick one")
 
     examples = list(load_examples(args.dataset, args.split, limit=args.limit))
     pool = build_answer_pool(examples)
     if args.chain_split:
         builder = ChainSplitScenarioBuilder(answer_pool=pool, k=args.k, seed=args.seed)
     else:
-        builder = ScenarioBuilder(answer_pool=pool, k=args.k, seed=args.seed, hard_traps=args.hard_traps)
+        builder = ScenarioBuilder(
+            answer_pool=pool, k=args.k, seed=args.seed, hard_traps=args.hard_traps, natural=args.natural
+        )
     judge = LLMJudge(model)
 
     scenarios, generations, designed = [], [], []
