@@ -27,7 +27,7 @@ dependencies = [
 
 [project.optional-dependencies]
 dev = ["pytest>=8,<9"]
-gpu = ["bitsandbytes>=0.43,<0.46"]
+gpu = ["bitsandbytes>=0.46.1"]
 
 [tool.setuptools.packages.find]
 where = ["src"]
