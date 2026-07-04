@@ -36,6 +36,10 @@ def main() -> None:
         "--natural", action="store_true",
         help="plant nothing: gold plus the dataset's own distractors, for organic errors",
     )
+    parser.add_argument(
+        "--real-retriever", action="store_true",
+        help="draw distractors from a live BM25 retriever over the corpus (use with --natural)",
+    )
     parser.add_argument("--model", default=DEFAULT_MODEL)
     parser.add_argument("--seed", type=int, default=DEFAULT_SEED)
     parser.add_argument("--max-new-tokens", type=int, default=24)
@@ -56,11 +60,17 @@ def main() -> None:
 
     examples = list(load_examples(args.dataset, args.split, limit=args.limit))
     pool = build_answer_pool(examples)
+    retriever = None
+    if args.real_retriever:
+        from lineup.data.retrieval import BM25DistractorRetriever, build_corpus
+
+        retriever = BM25DistractorRetriever(build_corpus(examples))
     if args.chain_split:
         builder = ChainSplitScenarioBuilder(answer_pool=pool, k=args.k, seed=args.seed)
     else:
         builder = ScenarioBuilder(
-            answer_pool=pool, k=args.k, seed=args.seed, hard_traps=args.hard_traps, natural=args.natural
+            answer_pool=pool, k=args.k, seed=args.seed, hard_traps=args.hard_traps,
+            natural=args.natural, retriever=retriever,
         )
     judge = LLMJudge(model)
 
